@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<PluginConfig>
+    <Field id="updateFrequency" type="textfield" defaultValue="10">
+        <Label>Update device status frequency (minutes):</Label>
+    </Field>
+    <Field id="statusNote" type="label" fontSize="small" fontColor="darkgray">
+        <Label>Minimum update interval is 1 minute.  Maximum is 1440 (24 hours).  Default is 10.</Label>
+    </Field>
+    <Field id="sep2" type="separator"/>
+    <Field id="logLevel" type="menu" defaultValue="20">
+        <Label>Event Logging Level:</Label>
+        <List>
+            <Option value="5">Detailed Debugging Messages</Option>
+            <Option value="10">Debugging Messages</Option>
+            <Option value="20">Informational Messages</Option>
+            <Option value="30">Warning Messages</Option>
+            <Option value="40">Error Messages</Option>
+            <Option value="50">Critical Errors Only</Option>
+        </List>
+    </Field>       
+</PluginConfig>

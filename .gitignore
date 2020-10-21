@@ -127,3 +127,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+/ubnt.py
+/products-software-unifi-controller-api \[Ubiquiti Community Wiki\].webloc

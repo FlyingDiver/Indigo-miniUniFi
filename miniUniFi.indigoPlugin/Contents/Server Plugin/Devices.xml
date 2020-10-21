@@ -1,0 +1,108 @@
+<?xml version="1.0"?>
+<Devices>
+
+    <Device id="unifiController" type="custom">
+        <Name>UniFi Controller</Name>
+        <ConfigUI>
+            <Field id="address" type="textfield"  defaultValue="" tooltip="Enter IP address or Hostname of controller.">
+                <Label>IP Address or Hostname:</Label>
+            </Field>
+            <Field id="port" type="textfield" defaultValue="8443" tooltip="Port number">
+                <Label>Port:</Label>
+            </Field>
+            <Field id="username" type="textfield" defaultValue="Admin" tooltip="Enter User Name for gateway.">
+                <Label>Username:</Label>
+            </Field>
+            <Field id="password" type="textfield" defaultValue="" secure="true" tooltip="Enter Password for gateway.">
+                <Label>Password:</Label>
+            </Field>
+        </ConfigUI>
+        <States>
+            <State id="status" readonly="true">
+                <ValueType >String</ValueType>
+                <TriggerLabel>Controller Status</TriggerLabel>
+                <ControlPageLabel>Controller Status</ControlPageLabel>
+            </State>
+        </States>
+        <UiDisplayStateId>status</UiDisplayStateId>
+     </Device>
+
+    <Device id="unifiClient" type="custom">
+        <Name>UniFi Client Device</Name>
+        <ConfigUI>
+            <Field id="SupportsOnState" type="checkbox" defaultValue="false" hidden="true" />
+
+            <Field id="unifi_controller" type="menu">
+                <Label>UniFi Controller:</Label>
+                <List class="self" method="get_controller_list" dynamicReload="true"/>
+                <CallbackMethod>menuChanged</CallbackMethod>
+            </Field>
+            <Field id="unifi_site" type="menu">
+                <Label>Site:</Label>
+                <List class="self" method="get_site_list" dynamicReload="true"/>
+                <CallbackMethod>menuChanged</CallbackMethod>
+            </Field>
+            <Field id="address" type="menu">
+                <Label>Device:</Label>
+                <List class="self" filter="Available" method="get_client_list" dynamicReload="true"/>
+                <CallbackMethod>menuChanged</CallbackMethod>
+            </Field>
+        </ConfigUI>
+        <States>
+            <State id="status" readonly="true">
+                <ValueType >String</ValueType>
+                <TriggerLabel>Client Status</TriggerLabel>
+                <ControlPageLabel>Client Status</ControlPageLabel>
+            </State>
+            <State id="hostname" readonly="true">
+                <ValueType >String</ValueType>
+                <TriggerLabel>Host Name</TriggerLabel>
+                <ControlPageLabel>Host Name</ControlPageLabel>
+            </State>
+            <State id="ip" readonly="true">
+                <ValueType >String</ValueType>
+                <TriggerLabel>IP Address</TriggerLabel>
+                <ControlPageLabel>IP Address</ControlPageLabel>
+            </State>
+            <State id="is_wired" readonly="true">
+                <ValueType >Boolean</ValueType>
+                <TriggerLabel>Wired</TriggerLabel>
+                <ControlPageLabel>Wired</ControlPageLabel>
+            </State>
+        </States>
+        <UiDisplayStateId>status</UiDisplayStateId>
+    </Device>
+
+    <Device id="unifiDevice" type="custom">
+        <Name>UniFi Network Device (WAP, Switch, Router)</Name>
+        <ConfigUI>
+            <Field id="SupportsOnState" type="checkbox" defaultValue="false" hidden="true" />
+
+            <Field id="unifi_controller" type="menu">
+                <Label>UniFi Controller:</Label>
+                <List class="self" method="get_controller_list" dynamicReload="true"/>
+                <CallbackMethod>menuChanged</CallbackMethod>
+            </Field>
+            <Field id="unifi_site" type="menu">
+                <Label>Site:</Label>
+                <List class="self" method="get_site_list" dynamicReload="true"/>
+                <CallbackMethod>menuChanged</CallbackMethod>
+            </Field>
+            <Field id="address" type="menu">
+                <Label>Device:</Label>
+                <List class="self" filter="Available" method="get_device_list" dynamicReload="true"/>
+                <CallbackMethod>menuChanged</CallbackMethod>
+            </Field>
+        </ConfigUI>
+        <States>
+            <State id="status" readonly="true">
+                <ValueType >String</ValueType>
+                <TriggerLabel>Device Status</TriggerLabel>
+                <ControlPageLabel>Device Status</ControlPageLabel>
+            </State>
+        </States>
+        <UiDisplayStateId>status</UiDisplayStateId>
+    </Device>
+
+
+</Devices>
