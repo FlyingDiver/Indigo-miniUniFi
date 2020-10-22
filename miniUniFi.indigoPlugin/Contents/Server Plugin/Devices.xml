@@ -16,6 +16,14 @@
             <Field id="password" type="textfield" defaultValue="" secure="true" tooltip="Enter Password for gateway.">
                 <Label>Password:</Label>
             </Field>
+        	<Field id="controllerType" type="menu" defaultValue="cloudKey">
+        		<Label>Controller Type:</Label>
+        		<List>
+        			<Option value="cloudKey">Cloud Key or Software Controller</Option>
+        			<Option value="UDM">UniFi Dream Machine</Option>
+        			<Option value="UDMPro">UniFi Dream Machine Pro</Option>
+        		</List>
+        	</Field>
         </ConfigUI>
         <States>
             <State id="status" readonly="true">
@@ -27,11 +35,13 @@
         <UiDisplayStateId>status</UiDisplayStateId>
      </Device>
 
-    <Device id="unifiClient" type="custom">
-        <Name>UniFi Client Device</Name>
+    <Device id="unifiClient" type="sensor">
+        <Name>UniFi Ethernet Client</Name>
         <ConfigUI>
-            <Field id="SupportsOnState" type="checkbox" defaultValue="false" hidden="true" />
-
+			<Field id="SupportsOnState" type="checkbox" defaultValue="true" hidden="true" />
+			<Field id="SupportsSensorValue" type="checkbox" defaultValue="false" hidden="true" />
+			<Field id="SupportsStatusRequest" type="checkbox" defaultValue="false" hidden="true" />
+			
             <Field id="unifi_controller" type="menu">
                 <Label>UniFi Controller:</Label>
                 <List class="self" method="get_controller_list" dynamicReload="true"/>
@@ -44,40 +54,19 @@
             </Field>
             <Field id="address" type="menu">
                 <Label>Device:</Label>
-                <List class="self" filter="Available" method="get_client_list" dynamicReload="true"/>
+                <List class="self" filter="Wired" method="get_client_list" dynamicReload="true"/>
                 <CallbackMethod>menuChanged</CallbackMethod>
             </Field>
         </ConfigUI>
-        <States>
-            <State id="status" readonly="true">
-                <ValueType >String</ValueType>
-                <TriggerLabel>Client Status</TriggerLabel>
-                <ControlPageLabel>Client Status</ControlPageLabel>
-            </State>
-            <State id="hostname" readonly="true">
-                <ValueType >String</ValueType>
-                <TriggerLabel>Host Name</TriggerLabel>
-                <ControlPageLabel>Host Name</ControlPageLabel>
-            </State>
-            <State id="ip" readonly="true">
-                <ValueType >String</ValueType>
-                <TriggerLabel>IP Address</TriggerLabel>
-                <ControlPageLabel>IP Address</ControlPageLabel>
-            </State>
-            <State id="is_wired" readonly="true">
-                <ValueType >Boolean</ValueType>
-                <TriggerLabel>Wired</TriggerLabel>
-                <ControlPageLabel>Wired</ControlPageLabel>
-            </State>
-        </States>
-        <UiDisplayStateId>status</UiDisplayStateId>
     </Device>
 
-    <Device id="unifiDevice" type="custom">
-        <Name>UniFi Network Device (WAP, Switch, Router)</Name>
+    <Device id="unifiWirelessClient" type="sensor">
+        <Name>UniFi Wireless Client</Name>
         <ConfigUI>
-            <Field id="SupportsOnState" type="checkbox" defaultValue="false" hidden="true" />
-
+			<Field id="SupportsOnState" type="checkbox" defaultValue="true" hidden="true" />
+			<Field id="SupportsSensorValue" type="checkbox" defaultValue="false" hidden="true" />
+			<Field id="SupportsStatusRequest" type="checkbox" defaultValue="false" hidden="true" />
+			
             <Field id="unifi_controller" type="menu">
                 <Label>UniFi Controller:</Label>
                 <List class="self" method="get_controller_list" dynamicReload="true"/>
@@ -90,19 +79,10 @@
             </Field>
             <Field id="address" type="menu">
                 <Label>Device:</Label>
-                <List class="self" filter="Available" method="get_device_list" dynamicReload="true"/>
+                <List class="self" filter="Wireless" method="get_client_list" dynamicReload="true"/>
                 <CallbackMethod>menuChanged</CallbackMethod>
             </Field>
         </ConfigUI>
-        <States>
-            <State id="status" readonly="true">
-                <ValueType >String</ValueType>
-                <TriggerLabel>Device Status</TriggerLabel>
-                <ControlPageLabel>Device Status</ControlPageLabel>
-            </State>
-        </States>
-        <UiDisplayStateId>status</UiDisplayStateId>
     </Device>
-
 
 </Devices>
