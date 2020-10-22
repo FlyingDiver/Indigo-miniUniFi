@@ -52,7 +52,9 @@ class Plugin(indigo.PluginBase):
     def startup(self):
         self.logger.info(u"Starting miniUniFi")
         
-        self.updateFrequency = float(self.pluginPrefs.get('updateFrequency', "1")) * 60.0
+        self.updateFrequency = float(self.pluginPrefs.get('updateFrequency', "60"))
+        if self.updateFrequency < 30.0: 
+            self.updateFrequency = 30.0
         self.logger.debug(u"updateFrequency = {}".format(self.updateFrequency))
         self.next_update = time.time()
 
@@ -60,8 +62,6 @@ class Plugin(indigo.PluginBase):
         self.unifi_clients = {}                 # dict of device state definitions keyed by DeviceID.
         self.unifi_wireless_clients = {}        # dict of device state definitions keyed by DeviceID.
         self.update_needed = False
-
-        indigo.devices.subscribeToChanges()
 
        
     def shutdown(self):
@@ -124,18 +124,6 @@ class Plugin(indigo.PluginBase):
         elif device.deviceTypeId == 'unifiWirelessClient':
             del self.unifi_wireless_clients[device.id]
             
-            
-    def deviceUpdated(self, oldDevice, newDevice):
-        indigo.PluginBase.deviceUpdated(self, oldDevice, newDevice)
-
-        if oldDevice.id in self.unifi_clients and (oldDevice.states != newDevice.states):
-            oldStates = set(oldDevice.states)
-            newStates = set(newDevice.states)
-            diffStates = oldStates ^ newStates
-            if len(diffStates):
-                self.logger.debug("{}: deviceUpdated".format(oldDevice.name)) 
-                for state in diffStates:
-                    self.logger.debug("\t{}: {} -> {}".format(state, oldDevice.states.get(state, None), newDevice.states.get(state, None)))
 
 
     ########################################
@@ -153,7 +141,9 @@ class Plugin(indigo.PluginBase):
             self.indigo_log_handler.setLevel(self.logLevel)
 
             try:
-                self.updateFrequency = float(valuesDict[u"updateFrequency"]) * 60.0
+                self.updateFrequency = float(valuesDict[u"updateFrequency"])
+                if self.updateFrequency < 30.0: 
+                    self.updateFrequency = 30.0
             except:
                 self.updateFrequency = 60.0
 
@@ -166,7 +156,7 @@ class Plugin(indigo.PluginBase):
 
     def updateUniFiController(self, device):
     
-        self.logger.debug("{}: Updating controller".format(device.name))
+        self.logger.debug(u"{}: Updating controller".format(device.name))
         
         with requests.Session() as session:
         
@@ -193,7 +183,7 @@ class Plugin(indigo.PluginBase):
                 active_url = "{}/proxy/network/api/s/{}/stat/sta"
             
             else:
-                self.logger.error("UniFi Unknown Controller Type Error: {}".format(device.pluginProps['controllerType']))
+                self.logger.error(u"UniFi Unknown Controller Type Error: {}".format(device.pluginProps['controllerType']))
                 return
                 
             # login
@@ -201,7 +191,7 @@ class Plugin(indigo.PluginBase):
             url = login_url.format(base_url)
             response = session.post(url, headers=headers, json=login_body, verify=False)
             if not response.status_code == requests.codes.ok:
-                self.logger.error("UniFi Controller Login Error: {}".format(response.status_code))
+                self.logger.error(u"UniFi Controller Login Error: {}".format(response.status_code))
                 device.updateStateOnServer(key='status', value="Login Error")
                 device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
                 return
@@ -209,25 +199,25 @@ class Plugin(indigo.PluginBase):
             device.updateStateOnServer(key='status', value="Login OK")
             device.updateStateImageOnServer(indigo.kStateImageSel.SensorOn)
             api_data = response.json()      
-            self.logger.threaddebug("Login response =\n{}".format(json.dumps(api_data, indent=4, sort_keys=True)))
+            self.logger.threaddebug(u"Login response =\n{}".format(json.dumps(api_data, indent=4, sort_keys=True)))
         
             # Get Sites
     
             url = sites_url.format(base_url)
             response = session.get(url, headers=headers, verify=False)
             if not response.status_code == requests.codes.ok:
-                self.logger.error("UniFi Controller Get Sites Error: {}".format(response.status_code))
+                self.logger.error(u"UniFi Controller Get Sites Error: {}".format(response.status_code))
                 device.updateStateOnServer(key='status', value="Login Error")
                 device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
                 return
 
             api_data = response.json()     
-            self.logger.threaddebug("Sites response =\n{}".format(json.dumps(api_data, indent=4, sort_keys=True)))
+            self.logger.threaddebug(u"Sites response =\n{}".format(json.dumps(api_data, indent=4, sort_keys=True)))
 
             siteList = api_data['data']
             sites = {}
             for site in siteList:
-                self.logger.threaddebug("Saving Site {} ({})".format(site['name'], site['desc']))
+                self.logger.threaddebug(u"Saving Site {} ({})".format(site['name'], site['desc']))
                 sites[site['name']] = {'description': site['desc']}
                         
                 # Get active Clients for site
@@ -235,13 +225,13 @@ class Plugin(indigo.PluginBase):
                 url = active_url.format(base_url, site['name'])
                 response = session.get(url, headers=headers, verify=False)
                 if not response.status_code == requests.codes.ok:
-                    self.logger.error("UniFi Controller Get Active Clients Error: {}".format(response.status_code))
+                    self.logger.error(u"UniFi Controller Get Active Clients Error: {}".format(response.status_code))
                     device.updateStateOnServer(key='status', value="Login Error")
                     device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
                     return
 
                 api_data = response.json()
-                self.logger.threaddebug("Active clients response =\n{}".format(json.dumps(api_data, indent=4, sort_keys=True)))
+                self.logger.threaddebug(u"Active clients response =\n{}".format(json.dumps(api_data, indent=4, sort_keys=True)))
 
                 responseList = api_data['data']
                 actives = {}
@@ -250,7 +240,7 @@ class Plugin(indigo.PluginBase):
                     ip = client.get('ip', "--unknown--")
                     mac = client.get('mac', "--unknown--")
                     wired = "Wired" if client['is_wired'] else "Wireless"
-                    self.logger.threaddebug("Saving {} Active Client {} - {} ({})".format(wired, name, ip, mac))
+                    self.logger.threaddebug(u"Saving {} Active Client {} - {} ({})".format(wired, name, ip, mac))
                     actives[client['mac']] = client
                 sites[site['name']]['actives'] = actives
                 
@@ -261,7 +251,7 @@ class Plugin(indigo.PluginBase):
 
     def updateUniFiClient(self, device):
     
-        self.logger.debug("{}: Updating UniFi Client: {}".format(device.name, device.address))
+        self.logger.debug(u"{}: Updating UniFi Client: {}".format(device.name, device.address))
 
         controller = int(device.pluginProps['unifi_controller'])        
         site = device.pluginProps['unifi_site']        
@@ -270,12 +260,12 @@ class Plugin(indigo.PluginBase):
         try:
             client_data = self.unifi_controllers[controller]['sites'][site]['actives'][uClient]
         except:
-            self.logger.debug("{}: client_data not found".format(device.name))
+            self.logger.debug(u"{}: client_data not found".format(device.name))
             device.updateStateOnServer(key="onOffState", value=False, uiValue=u"Offline")
             device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
             return
         
-        self.logger.threaddebug("client_data =\n{}".format(json.dumps(client_data, indent=4, sort_keys=True)))
+        self.logger.threaddebug(u"client_data =\n{}".format(json.dumps(client_data, indent=4, sort_keys=True)))
         
         states_list = []
         if client_data:
@@ -290,23 +280,23 @@ class Plugin(indigo.PluginBase):
             self.logger.error(u"{}: invalid state type in states_list: {}".format(device.name, states_list))   
         
         if device.deviceTypeId == "unifiClient":
-            self.logger.debug("{}: Online".format(device.name))
+            self.logger.debug(u"{}: Online".format(device.name))
             device.updateStateOnServer(key="onOffState", value=True, uiValue=u"Online")
             device.updateStateImageOnServer(indigo.kStateImageSel.SensorOn)
             
         elif device.deviceTypeId == "unifiWirelessClient":
             essid = client_data.get('essid', None)
             if essid:
-                self.logger.debug("{}: Online @ {}".format(device.name, essid))
+                self.logger.debug(u"{}: Online @ {}".format(device.name, essid))
                 device.updateStateOnServer(key="onOffState", value=True, uiValue=u"Online @ {}".format(essid))
                 device.updateStateImageOnServer(indigo.kStateImageSel.SensorOn)
             else:
-                self.logger.debug("{}: Offline".format(device.name))
+                self.logger.debug(u"{}: Offline".format(device.name))
                 device.updateStateOnServer(key="onOffState", value=False, uiValue=u"Offline")
                 device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
         
         else:
-            self.logger.debug("{}: Unknown Device Type: {}".format(device.name, device.deviceTypeId))
+            self.logger.debug(u"{}: Unknown Device Type: {}".format(device.name, device.deviceTypeId))
 
 
     ################################################################################
@@ -355,39 +345,39 @@ class Plugin(indigo.PluginBase):
             (addr, info['name'])
             for addr, info in self.unifi_controllers.iteritems()
         ]
-        self.logger.threaddebug("get_controller_list: controller_list = {}".format(controller_list))
+        self.logger.threaddebug(u"get_controller_list: controller_list = {}".format(controller_list))
         controller_list.sort(key=lambda tup: tup[1])
         return controller_list
         
     def get_site_list(self, filter="", valuesDict=None, typeId="", targetId=0):
-        self.logger.debug("get_site_list: typeId = {}, targetId = {}, valuesDict = {}".format(typeId, targetId, valuesDict))
+        self.logger.debug(u"get_site_list: typeId = {}, targetId = {}, valuesDict = {}".format(typeId, targetId, valuesDict))
         
         try:
             controller = self.unifi_controllers[int( valuesDict["unifi_controller"])]
         except:
-            self.logger.debug("get_site_list: controller not found, returning empty list")
+            self.logger.debug(u"get_site_list: controller not found, returning empty list")
             return []
         
-        self.logger.debug("get_site_list: using controller {}".format(controller['name']))
+        self.logger.debug(u"get_site_list: using controller {}".format(controller['name']))
         site_list = [
             (name, controller['sites'][name]['description'])
             for name in controller['sites']
         ]
 
-        self.logger.threaddebug("get_site_list: site_list = {}".format(site_list))
+        self.logger.threaddebug(u"get_site_list: site_list = {}".format(site_list))
         site_list.sort(key=lambda tup: tup[1])
         return site_list
         
     def get_client_list(self, filter="", valuesDict=None, typeId="", targetId=0):
-        self.logger.debug("get_client_list: typeId = {}, targetId = {}, filter = {}, valuesDict = {}".format(typeId, targetId, filter, valuesDict))
+        self.logger.debug(u"get_client_list: typeId = {}, targetId = {}, filter = {}, valuesDict = {}".format(typeId, targetId, filter, valuesDict))
 
         try:
             site = self.unifi_controllers[int(valuesDict["unifi_controller"])]['sites'][valuesDict["unifi_site"]]
         except:
-            self.logger.debug("get_client_list: no site specified, returning empty list")
+            self.logger.debug(u"get_client_list: no site specified, returning empty list")
             return []
 
-        self.logger.debug("get_client_list: using site {} - {}".format(valuesDict["unifi_site"], site['description']))
+        self.logger.debug(u"get_client_list: using site {} - {}".format(valuesDict["unifi_site"], site['description']))
 
         wired = (filter == "Wired")
         client_list = [
@@ -395,7 +385,7 @@ class Plugin(indigo.PluginBase):
            for mac, data in site['actives'].iteritems() if data.get('is_wired', False) == wired
         ]
                                                 
-        self.logger.threaddebug("get_client_list: device_list for {} ({}) = {}".format(typeId, filter, client_list))
+        self.logger.threaddebug(u"get_client_list: device_list for {} ({}) = {}".format(typeId, filter, client_list))
         client_list.sort(key=lambda tup: tup[1])
         return client_list     
 
