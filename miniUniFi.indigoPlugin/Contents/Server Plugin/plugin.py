@@ -60,7 +60,6 @@ class Plugin(indigo.PluginBase):
 
         self.unifi_controllers = {}             # dict of controller info dicts keyed by DeviceID.  
         self.unifi_clients = {}                 # dict of device state definitions keyed by DeviceID.
-        self.unifi_wireless_clients = {}        # dict of device state definitions keyed by DeviceID.
         self.update_needed = False
 
        
@@ -85,11 +84,10 @@ class Plugin(indigo.PluginBase):
 
                     # now update all the client devices  
                     
+                    self.logger.debug(u"Updating UniFi Clients")
                     for clientID in self.unifi_clients:
                         self.updateUniFiClient(indigo.devices[clientID])
-                    for clientID in self.unifi_wireless_clients:
-                        self.updateUniFiClient(indigo.devices[clientID])
-
+                        
                 self.sleep(1.0)
 
         except self.StopThread:
@@ -103,14 +101,10 @@ class Plugin(indigo.PluginBase):
             self.unifi_controllers[device.id] = {'name': device.name}   # all the associated data added during update
             self.update_needed = True
             
-        elif device.deviceTypeId == 'unifiClient':
+        elif device.deviceTypeId in ['unifiClient', 'unifiWirelessClient']:
             self.unifi_clients[device.id] = None        # discovered states for the device
             self.update_needed = True
-        
-        elif device.deviceTypeId == 'unifiWirelessClient':
-            self.unifi_wireless_clients[device.id] = None        # discovered states for the device
-            self.update_needed = True
-        
+                
     def deviceStopComm(self, device):
 
         self.logger.info(u"{}: Stopping Device".format(device.name))
@@ -118,12 +112,9 @@ class Plugin(indigo.PluginBase):
         if device.deviceTypeId == 'unifiController':
             del self.unifi_controllers[device.id]
 
-        elif device.deviceTypeId == 'unifiClient':
+        elif device.deviceTypeId in ['unifiClient', 'unifiWirelessClient']:
             del self.unifi_clients[device.id]
-            
-        elif device.deviceTypeId == 'unifiWirelessClient':
-            del self.unifi_wireless_clients[device.id]
-            
+                        
 
 
     ########################################
@@ -251,7 +242,7 @@ class Plugin(indigo.PluginBase):
 
     def updateUniFiClient(self, device):
     
-        self.logger.debug(u"{}: Updating UniFi Client: {}".format(device.name, device.address))
+        self.logger.threaddebug(u"{}: Updating UniFi Client: {}".format(device.name, device.address))
 
         controller = int(device.pluginProps['unifi_controller'])        
         site = device.pluginProps['unifi_site']        
