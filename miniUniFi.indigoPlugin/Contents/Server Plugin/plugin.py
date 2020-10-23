@@ -61,7 +61,9 @@ class Plugin(indigo.PluginBase):
         self.unifi_controllers = {}             # dict of controller info dicts keyed by DeviceID.  
         self.unifi_clients = {}                 # dict of device state definitions keyed by DeviceID.
         self.update_needed = False
-
+        self.last_controller = None
+        self.last_site = u'default'
+        
        
     def shutdown(self):
         self.logger.info(u"Shutting down miniUniFi")
@@ -100,6 +102,8 @@ class Plugin(indigo.PluginBase):
         if device.deviceTypeId == 'unifiController':
             self.unifi_controllers[device.id] = {'name': device.name}   # all the associated data added during update
             self.update_needed = True
+            if not self.last_controller:
+                self.last_controller = unicode(device.id)
             
         elif device.deviceTypeId in ['unifiClient', 'unifiWirelessClient']:
             self.unifi_clients[device.id] = None        # discovered states for the device
@@ -114,7 +118,6 @@ class Plugin(indigo.PluginBase):
 
         elif device.deviceTypeId in ['unifiClient', 'unifiWirelessClient']:
             del self.unifi_clients[device.id]
-                        
 
 
     ########################################
@@ -336,8 +339,8 @@ class Plugin(indigo.PluginBase):
             (addr, info['name'])
             for addr, info in self.unifi_controllers.iteritems()
         ]
-        self.logger.threaddebug(u"get_controller_list: controller_list = {}".format(controller_list))
         controller_list.sort(key=lambda tup: tup[1])
+        self.logger.threaddebug(u"get_controller_list: controller_list = {}".format(controller_list))
         return controller_list
         
     def get_site_list(self, filter="", valuesDict=None, typeId="", targetId=0):
@@ -350,13 +353,15 @@ class Plugin(indigo.PluginBase):
             return []
         
         self.logger.debug(u"get_site_list: using controller {}".format(controller['name']))
+        self.last_controller = valuesDict["unifi_controller"]
+        
         site_list = [
             (name, controller['sites'][name]['description'])
             for name in controller['sites']
         ]
 
-        self.logger.threaddebug(u"get_site_list: site_list = {}".format(site_list))
         site_list.sort(key=lambda tup: tup[1])
+        self.logger.threaddebug(u"get_site_list: site_list = {}".format(site_list))
         return site_list
         
     def get_client_list(self, filter="", valuesDict=None, typeId="", targetId=0):
@@ -369,6 +374,7 @@ class Plugin(indigo.PluginBase):
             return []
 
         self.logger.debug(u"get_client_list: using site {} - {}".format(valuesDict["unifi_site"], site['description']))
+        self.last_site = valuesDict["unifi_site"]
 
         wired = (filter == "Wired")
         client_list = [
@@ -383,6 +389,20 @@ class Plugin(indigo.PluginBase):
     # doesn't do anything, just needed to force other menus to dynamically refresh
     def menuChanged(self, valuesDict = None, typeId = None, devId = None):
         return valuesDict
+
+    ########################################
+                        
+    def getDeviceConfigUiValues(self, pluginProps, typeId, devId):
+        valuesDict = indigo.Dict(pluginProps)
+        errorsDict = indigo.Dict()
+        self.logger.debug("getDeviceConfigUiValues: devId = {}, typeId = {}, pluginProps =\n{}".format(devId, typeId, pluginProps))
+
+        if typeId in ['unifiClient', 'unifiWirelessClient']:
+            valuesDict["unifi_controller"] = self.last_controller
+            valuesDict["unifi_site"] = self.last_site
+        
+        return (valuesDict, errorsDict)
+
 
 
 
