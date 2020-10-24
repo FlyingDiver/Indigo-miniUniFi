@@ -16,14 +16,14 @@
             <Field id="password" type="textfield" defaultValue="" secure="true" tooltip="Enter Password for gateway.">
                 <Label>Password:</Label>
             </Field>
-        	<Field id="controllerType" type="menu" defaultValue="cloudKey">
-        		<Label>Controller Type:</Label>
-        		<List>
-        			<Option value="cloudKey">Cloud Key or Software Controller</Option>
-        			<Option value="UDM">UniFi Dream Machine</Option>
-        			<Option value="UDMPro">UniFi Dream Machine Pro</Option>
-        		</List>
-        	</Field>
+            <Field id="controllerType" type="menu" defaultValue="cloudKey">
+                <Label>Controller Type:</Label>
+                <List>
+                    <Option value="cloudKey">Cloud Key or Software Controller</Option>
+                    <Option value="UDM">UniFi Dream Machine</Option>
+                    <Option value="UDMPro">UniFi Dream Machine Pro</Option>
+                </List>
+            </Field>
         </ConfigUI>
         <States>
             <State id="status" readonly="true">
@@ -38,10 +38,10 @@
     <Device id="unifiClient" type="sensor">
         <Name>UniFi Ethernet Client</Name>
         <ConfigUI>
-			<Field id="SupportsOnState" type="checkbox" defaultValue="true" hidden="true" />
-			<Field id="SupportsSensorValue" type="checkbox" defaultValue="false" hidden="true" />
-			<Field id="SupportsStatusRequest" type="checkbox" defaultValue="false" hidden="true" />
-			
+            <Field id="SupportsOnState" type="checkbox" defaultValue="true" hidden="true" />
+            <Field id="SupportsSensorValue" type="checkbox" defaultValue="false" hidden="true" />
+            <Field id="SupportsStatusRequest" type="checkbox" defaultValue="false" hidden="true" />
+            
             <Field id="unifi_controller" type="menu">
                 <Label>UniFi Controller:</Label>
                 <List class="self" method="get_controller_list" dynamicReload="true"/>
@@ -58,15 +58,22 @@
                 <CallbackMethod>menuChanged</CallbackMethod>
             </Field>
         </ConfigUI>
+        <States>
+            <State id="offline_seconds" readonly="true">
+                <ValueType >Number</ValueType>
+                <TriggerLabel>Seconds Offline</TriggerLabel>
+                <ControlPageLabel>Seconds Offline</ControlPageLabel>
+            </State>
+        </States>
     </Device>
 
     <Device id="unifiWirelessClient" type="sensor">
         <Name>UniFi Wireless Client</Name>
         <ConfigUI>
-			<Field id="SupportsOnState" type="checkbox" defaultValue="true" hidden="true" />
-			<Field id="SupportsSensorValue" type="checkbox" defaultValue="false" hidden="true" />
-			<Field id="SupportsStatusRequest" type="checkbox" defaultValue="false" hidden="true" />
-			
+            <Field id="SupportsOnState" type="checkbox" defaultValue="true" hidden="true" />
+            <Field id="SupportsSensorValue" type="checkbox" defaultValue="false" hidden="true" />
+            <Field id="SupportsStatusRequest" type="checkbox" defaultValue="false" hidden="true" />
+            
             <Field id="unifi_controller" type="menu">
                 <Label>UniFi Controller:</Label>
                 <List class="self" method="get_controller_list" dynamicReload="true"/>
@@ -83,15 +90,22 @@
                 <CallbackMethod>menuChanged</CallbackMethod>
             </Field>
         </ConfigUI>
-    </Device>
+        <States>
+            <State id="offline_seconds" readonly="true">
+                <ValueType >Number</ValueType>
+                <TriggerLabel>Seconds Offline</TriggerLabel>
+                <ControlPageLabel>Seconds Offline</ControlPageLabel>
+            </State>
+        </States>
+  </Device>
 
     <Device id="unifiDevice" type="sensor">
         <Name>UniFi Device</Name>
         <ConfigUI>
-			<Field id="SupportsOnState" type="checkbox" defaultValue="true" hidden="true" />
-			<Field id="SupportsSensorValue" type="checkbox" defaultValue="false" hidden="true" />
-			<Field id="SupportsStatusRequest" type="checkbox" defaultValue="false" hidden="true" />
-			
+            <Field id="SupportsOnState" type="checkbox" defaultValue="true" hidden="true" />
+            <Field id="SupportsSensorValue" type="checkbox" defaultValue="true" hidden="true" />
+            <Field id="SupportsStatusRequest" type="checkbox" defaultValue="false" hidden="true" />
+            
             <Field id="unifi_controller" type="menu">
                 <Label>UniFi Controller:</Label>
                 <List class="self" method="get_controller_list" dynamicReload="true"/>

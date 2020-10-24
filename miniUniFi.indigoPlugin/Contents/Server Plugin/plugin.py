@@ -7,6 +7,8 @@ import requests
 import logging
 import json
 
+from datetime import datetime
+
 requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
 # Indigo really doesn't like dicts with keys that start with a number or symbol...
@@ -291,44 +293,64 @@ class Plugin(indigo.PluginBase):
         controller = int(device.pluginProps['unifi_controller'])        
         site = device.pluginProps['unifi_site']        
         uClient = device.address
+        offline = False
+        client_data = {}
         
         try:
             client_data = self.unifi_controllers[controller]['sites'][site]['actives'][uClient]
         except:
             self.logger.debug(u"{}: client_data not found".format(device.name))
-            device.updateStateOnServer(key="onOffState", value=False, uiValue=u"Offline")
-            device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
-            return
+            offline = True
         
-        self.logger.threaddebug(u"client_data =\n{}".format(json.dumps(client_data, indent=4, sort_keys=True)))
+        if not offline:
+            self.logger.threaddebug(u"client_data =\n{}".format(json.dumps(client_data, indent=4, sort_keys=True)))
         
-        states_list = []
-        if client_data:
-            dict_to_states(u"", client_data, states_list)      
+            states_list = []
+            if client_data:
+                dict_to_states(u"", client_data, states_list)      
     
-        self.unifi_clients[device.id] = states_list
-        device.stateListOrDisplayStateIdChanged()
+            self.unifi_clients[device.id] = states_list
+            device.stateListOrDisplayStateIdChanged()
 
-        try:     
-            device.updateStatesOnServer(states_list)
-        except TypeError as err:
-            self.logger.error(u"{}: invalid state type in states_list: {}".format(device.name, states_list))   
+            try:     
+                device.updateStatesOnServer(states_list)
+            except TypeError as err:
+                self.logger.error(u"{}: invalid state type in states_list: {}".format(device.name, states_list))   
+        
         
         if device.deviceTypeId == "unifiClient":
-            self.logger.debug(u"{}: Online".format(device.name))
-            device.updateStateOnServer(key="onOffState", value=True, uiValue=u"Online")
-            device.updateStateImageOnServer(indigo.kStateImageSel.SensorOn)
-            
-        elif device.deviceTypeId == "unifiWirelessClient":
-            essid = client_data.get('essid', None)
-            if essid:
-                self.logger.debug(u"{}: Online @ {}".format(device.name, essid))
-                device.updateStateOnServer(key="onOffState", value=True, uiValue=u"Online @ {}".format(essid))
-                device.updateStateImageOnServer(indigo.kStateImageSel.SensorOn)
-            else:
+            if offline:
                 self.logger.debug(u"{}: Offline".format(device.name))
                 device.updateStateOnServer(key="onOffState", value=False, uiValue=u"Offline")
                 device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
+            
+            else:
+                self.logger.debug(u"{}: Online".format(device.name))
+                device.updateStateOnServer(key="onOffState", value=True, uiValue=u"Online")
+                device.updateStateImageOnServer(indigo.kStateImageSel.SensorOn)
+            
+        elif device.deviceTypeId == "unifiWirelessClient":
+            essid = client_data.get('essid', None)
+            if offline or not essid:
+                device.updateStateOnServer(key="onOffState", value=False, uiValue=u"Offline")
+                device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
+                last_seen = device.states.get('last_seen', None) 
+                if last_seen:
+                    offline_seconds = (datetime.now() - datetime.fromtimestamp(last_seen)).total_seconds()
+                    minutes, seconds = divmod(offline_seconds, 60)
+                    hours, minutes = divmod(minutes, 60)
+                    status = u"Offline {}:{}:{}".format(int(hours), int(minutes), int(seconds))
+                else:
+                    status = "Offline"
+                device.updateStateOnServer(key="onOffState", value=False, uiValue=status)
+                device.updateStateOnServer(key='offline_seconds', value=offline_seconds)
+                device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
+                self.logger.debug(u"{}: {}".format(device.name, status))
+
+            else:
+                self.logger.debug(u"{}: Online @ {}".format(device.name, essid))
+                device.updateStateOnServer(key="onOffState", value=True, uiValue=u"Online @ {}".format(essid))
+                device.updateStateImageOnServer(indigo.kStateImageSel.SensorOn)
         
         else:
             self.logger.debug(u"{}: Unknown Device Type: {}".format(device.name, device.deviceTypeId))
