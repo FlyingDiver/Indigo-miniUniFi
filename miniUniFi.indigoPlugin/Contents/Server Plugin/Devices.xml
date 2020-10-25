@@ -40,7 +40,7 @@
      </Device>
 
     <Device id="unifiClient" type="sensor">
-        <Name>UniFi Ethernet Client</Name>
+        <Name>UniFi Wired Client</Name>
         <ConfigUI>
             <Field id="SupportsOnState" type="checkbox" defaultValue="true" hidden="true" />
             <Field id="SupportsSensorValue" type="checkbox" defaultValue="false" hidden="true" />
