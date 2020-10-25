@@ -454,8 +454,8 @@ class Plugin(indigo.PluginBase):
     def get_controller_list(self, filter="", valuesDict=None, typeId="", targetId=0):
         self.logger.debug("get_controller_list: typeId = {}, targetId = {}, valuesDict = {}".format(typeId, targetId, valuesDict))
         controller_list = [
-            (addr, info['name'])
-            for addr, info in self.unifi_controllers.iteritems()
+            (devID, indigo.devices[devID].name)
+            for devID in self.unifi_controllers
         ]
         controller_list.sort(key=lambda tup: tup[1])
         self.logger.threaddebug(u"get_controller_list: controller_list = {}".format(controller_list))
