@@ -7,8 +7,11 @@
             <Field id="address" type="textfield"  defaultValue="" tooltip="Enter IP address or Hostname of controller.">
                 <Label>IP Address or Hostname:</Label>
             </Field>
-            <Field id="port" type="textfield" defaultValue="8443" tooltip="Port number">
+            <Field id="port" type="textfield" defaultValue="" tooltip="Port number">
                 <Label>Port:</Label>
+            </Field>
+            <Field id="portLabel" type="label" fontSize="small" fontColor="darkgray">
+                <Label>Leave blank for default port number.  Only fill this field for non-standard ports.</Label>
             </Field>
             <Field id="username" type="textfield" defaultValue="Admin" tooltip="Enter User Name for gateway.">
                 <Label>Username:</Label>

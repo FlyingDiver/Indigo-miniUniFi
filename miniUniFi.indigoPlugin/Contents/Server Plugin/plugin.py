@@ -146,6 +146,16 @@ class Plugin(indigo.PluginBase):
         elif device.deviceTypeId == 'unifiDevice':
             del self.unifi_devices[device.id]
 
+    def validateDeviceConfigUi(self, valuesDict, typeId, devId):
+
+        if not len(valuesDict.get('port', None)):       # no port specified
+            if valuesDict['controllerType'] == "UDMPro":
+                valuesDict['port'] = 443
+            else:
+                valuesDict['port'] = 8443
+
+        return (True, valuesDict)
+
     ########################################
     #
     # PluginConfig methods
@@ -179,6 +189,7 @@ class Plugin(indigo.PluginBase):
         self.logger.debug(u"{}: Updating controller".format(device.name))
                 
         headers = {"Accept": "application/json", "Content-Type": "application/json"}
+        login_headers = {"Accept": "application/json", "Content-Type": "application/json", "referer": "/login"}
         base_url = "https://{}:{}/".format(device.pluginProps['address'], device.pluginProps['port'])
         login_body = { "username": device.pluginProps['username'], "password": device.pluginProps['password']}
         ssl_verify = device.pluginProps.get('ssl_verify', False)
@@ -224,20 +235,21 @@ class Plugin(indigo.PluginBase):
 
 
             # login
-    
+            
             try:
                 url = login_url.format(base_url)
-                response = session.post(url, headers=headers, json=login_body, verify=ssl_verify)
+                response = session.post(url, headers=login_headers, json=login_body, verify=ssl_verify)
             except Exception as err:
                 self.logger.error(u"UniFi Controller Login Connection Error: {}".format(err))
                 device.updateStateOnServer(key='status', value="Connection Error")
                 device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
                 return
-            else:
-                self.logger.debug(u"UniFi Controller Login response: {}".format(response.status_code))
             
-            if not response.status_code == requests.codes.ok:
-                self.logger.error(u"UniFi Controller Login Error: {}".format(response.status_code))
+            if response.status_code != requests.codes.ok:
+                self.logger.error(u"UniFi Controller Login Status: {}".format(response.status_code))
+                self.logger.error(u"UniFi Controller Login URL: {}".format(response.url))
+                self.logger.error(u"UniFi Controller Login Headers: {}".format(response.headers))
+                
                 device.updateStateOnServer(key='status', value="Login Error")
                 device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
                 return
@@ -577,12 +589,23 @@ class Plugin(indigo.PluginBase):
         errorsDict = indigo.Dict()
         self.logger.debug("getDeviceConfigUiValues: devId = {}, typeId = {}, pluginProps =\n{}".format(devId, typeId, pluginProps))
 
-        if typeId != 'unifiController':
+        if typeId == 'unifiController':
+            pass
+                    
+        else:
             valuesDict["unifi_controller"] = self.last_controller
             valuesDict["unifi_site"] = self.last_site
         
         return (valuesDict, errorsDict)
 
+
+    def controllerTypeSelected(self, valuesDict=None, filter=u'', typeId=u'', targetId=0):
+        controllerType = valuesDict.get(u'controllerType', u'')
+        if controllerType == "UDMPro":
+            valuesDict['port'] = 80
+        else:
+            valuesDict['port'] = 8443
+        return valuesDict
 
 
 
