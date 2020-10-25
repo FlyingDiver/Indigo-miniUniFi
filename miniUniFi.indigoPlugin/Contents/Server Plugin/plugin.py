@@ -198,8 +198,8 @@ class Plugin(indigo.PluginBase):
             device_url = "{}api/s/{}/stat/device"
         
         elif device.pluginProps['controllerType'] == "UDMPro":
-            login_url = "{}proxy/network/api/auth/login"
-            sites_url = "{}proxy/network//api/self/sites"     
+            login_url = "{}api/auth/login"
+            sites_url = "{}proxy/network/api/self/sites"     
             active_url = "{}proxy/network/api/s/{}/stat/sta"
             device_url = "{}proxy/network/api/s/{}/stat/device"
         
