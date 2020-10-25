@@ -24,6 +24,10 @@
                     <Option value="UDMPro">UniFi Dream Machine Pro</Option>
                 </List>
             </Field>
+            <Field id="ssl_verify" type="checkbox" defaultValue="false" tooltip="Verify SSL Certificates">
+                <Label>Verify SSL:</Label>
+                <Description>Enable SSL Certificate Verification</Description>
+            </Field>
         </ConfigUI>
         <States>
             <State id="status" readonly="true">
