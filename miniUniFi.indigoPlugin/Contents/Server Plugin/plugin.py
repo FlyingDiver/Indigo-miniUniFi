@@ -229,9 +229,11 @@ class Plugin(indigo.PluginBase):
             try:
                 response = session.post(base_url, verify=ssl_verify)
             except Exception as err:
-                self.logger.debug(u"UniFi Controller Test Connection Error: {}".format(err))
-            else:
-                self.logger.debug(u"UniFi Controller Test response: {}".format(response.status_code))
+                self.logger.error(u"UniFi Controller Test Connection Error: {}".format(err))
+            self.logger.info(u"UniFi Controller Test Status: {}".format(response.status_code))
+            self.logger.info(u"UniFi Controller Test URL: {}".format(response.url))
+            self.logger.info(u"UniFi Controller Test Headers: {}".format(response.headers))
+            self.logger.info(u"UniFi Controller Test Content: {}".format(response.text))
 
 
             # login
@@ -246,9 +248,10 @@ class Plugin(indigo.PluginBase):
                 return
             
             if response.status_code != requests.codes.ok:
-                self.logger.error(u"UniFi Controller Login Status: {}".format(response.status_code))
-                self.logger.error(u"UniFi Controller Login URL: {}".format(response.url))
-                self.logger.error(u"UniFi Controller Login Headers: {}".format(response.headers))
+                self.logger.info(u"UniFi Controller Login Status: {}".format(response.status_code))
+                self.logger.info(u"UniFi Controller Login URL: {}".format(response.url))
+                self.logger.info(u"UniFi Controller Login Headers: {}".format(response.headers))
+                self.logger.info(u"UniFi Controller Login Content: {}".format(response.text))
                 
                 device.updateStateOnServer(key='status', value="Login Error")
                 device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
