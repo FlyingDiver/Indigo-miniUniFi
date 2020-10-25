@@ -599,13 +599,4 @@ class Plugin(indigo.PluginBase):
         return (valuesDict, errorsDict)
 
 
-    def controllerTypeSelected(self, valuesDict=None, filter=u'', typeId=u'', targetId=0):
-        controllerType = valuesDict.get(u'controllerType', u'')
-        if controllerType == "UDMPro":
-            valuesDict['port'] = 80
-        else:
-            valuesDict['port'] = 8443
-        return valuesDict
-
-
 
