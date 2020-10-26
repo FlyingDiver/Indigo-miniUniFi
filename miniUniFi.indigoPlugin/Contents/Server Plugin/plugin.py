@@ -117,7 +117,7 @@ class Plugin(indigo.PluginBase):
         self.logger.info(u"{}: Starting Device".format(device.name))
 
         if device.deviceTypeId == 'unifiController':
-            self.unifi_controllers[device.id] = {'name': device.name, 'session': None}   # all the associated data added during update
+            self.unifi_controllers[device.id] = {'name': device.name}   # all the associated data added during update
             self.update_needed = True
             if not self.last_controller:
                 self.last_controller = unicode(device.id)
@@ -203,33 +203,21 @@ class Plugin(indigo.PluginBase):
         base_url = "https://{}:{}/".format(device.pluginProps['address'], device.pluginProps['port'])
         login_body = { "username": device.pluginProps['username'], "password": device.pluginProps['password'], 'strict': True}
         ssl_verify = device.pluginProps.get('ssl_verify', False)
-        
-        cookies = self.unifi_controllers.get(device.id, None).get('cookies', None)
-        session = self.unifi_controllers.get(device.id, None).get('session', None)
-        if not session:
-            self.logger.debug(u"{}: UniFi Controller Login".format(device.name))
-        
-            try:
-                response = requests.head(base_url, verify=ssl_verify, timeout=10.0)
-            except Exception as err:
-                self.logger.error(u"UniFi Controller Test Connection Error: {}".format(err))
-            self.logger.threaddebug(u"UniFi Controller Test Status: {}".format(response.status_code))
-            self.logger.threaddebug(u"UniFi Controller Test URL: {}".format(response.url))
-            self.logger.threaddebug(u"UniFi Controller Test Headers: {}".format(response.headers))
-            self.logger.threaddebug(u"UniFi Controller Test Cookies: {}".format(requests.utils.dict_from_cookiejar(response.cookies)))
-            self.logger.threaddebug(u"UniFi Controller Test Content: {}".format(response.text))
+
+        with requests.Session() as session:
 
             # set up URL templates based on controller type
             unifi_os = self.is_unifi_os(device)
             if unifi_os:
                 login_url = "{}api/auth/login"
+                sites_url = "{}proxy/network/api/self/sites"     
+                active_url = "{}proxy/network/api/s/{}/stat/sta"
+                device_url = "{}proxy/network/api/s/{}/stat/device"
             else:
                 login_url = "{}api/login"
-
-            session = requests.Session()
-            self.unifi_controllers[device.id]['session'] = session
-            
-            # login
+                sites_url = "{}api/self/sites"     
+                active_url = "{}api/s/{}/stat/sta"
+                device_url = "{}api/s/{}/stat/device"
             
             try:
                 url = login_url.format(base_url)
@@ -239,20 +227,9 @@ class Plugin(indigo.PluginBase):
                 device.updateStateOnServer(key='status', value="Connection Error")
                 device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
                 return
+
+            self.logger.threaddebug(u"UniFi Controller Login Response: {}".format(response))
             
-            cookies_dict = requests.utils.dict_from_cookiejar(session.cookies)
-            if unifi_os:
-                cookies = {"TOKEN": cookies_dict.get('TOKEN')}
-            else:
-                cookies = {"unifises": cookies_dict.get('unifises'), "csrf_token": cookies_dict.get('csrf_token')}
-            self.unifi_controllers[device.id]['cookies'] = cookies
-            
-            self.logger.threaddebug(u"UniFi Controller Login Status: {}".format(response.status_code))
-            self.logger.threaddebug(u"UniFi Controller Login URL: {}".format(response.url))
-            self.logger.threaddebug(u"UniFi Controller Login Headers: {}".format(response.headers))
-            self.logger.threaddebug(u"UniFi Controller Login Cookies: {}".format(cookies_dict))
-            self.logger.threaddebug(u"UniFi Controller Login Content: {}".format(response.text))
-                
             if response.status_code != requests.codes.ok:
                 device.updateStateOnServer(key='status', value="Login Error")
                 device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
@@ -260,94 +237,81 @@ class Plugin(indigo.PluginBase):
 
             device.updateStateOnServer(key='status', value="Login OK")
             device.updateStateImageOnServer(indigo.kStateImageSel.SensorOn)
-            api_data = response.json()      
 
-        # set up URL templates based on controller type
-        unifi_os = self.is_unifi_os(device)
-        if unifi_os:
-            sites_url = "{}proxy/network/api/self/sites"     
-            active_url = "{}proxy/network/api/s/{}/stat/sta"
-            device_url = "{}proxy/network/api/s/{}/stat/device"
-        else:
-            sites_url = "{}api/self/sites"     
-            active_url = "{}api/s/{}/stat/sta"
-            device_url = "{}api/s/{}/stat/device"
-     
-        # Get Sites
+            # not sure why the session cookies weren't working for the UDMP
+            
+            cookies_dict = requests.utils.dict_from_cookiejar(session.cookies)
+            if unifi_os:
+                cookies = {"TOKEN": cookies_dict.get('TOKEN')}
+            else:
+                cookies = {"unifises": cookies_dict.get('unifises'), "csrf_token": cookies_dict.get('csrf_token')}
+                     
+            # Get the Sites the controller handles
 
-        self.logger.debug(u"{}: UniFi Controller Getting Sites".format(device.name))
+            self.logger.debug(u"{}: UniFi Controller Getting Sites".format(device.name))
 
-        url = sites_url.format(base_url)
-        response = session.get(url, headers=headers, cookies=cookies, verify=ssl_verify)
-        if not response.status_code == requests.codes.ok:
-            self.logger.error(u"UniFi Controller Get Sites Error: {}".format(response.status_code))
-            device.updateStateOnServer(key='status', value="Login Error")
-            device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
-            return
-
-        self.logger.threaddebug(u"UniFi Controller Sites Status: {}".format(response.status_code))
-        self.logger.threaddebug(u"UniFi Controller Sites URL: {}".format(response.url))
-        self.logger.threaddebug(u"UniFi Controller Sites Headers: {}".format(response.headers))
-        self.logger.threaddebug(u"UniFi Controller Sites Cookies: {}".format(requests.utils.dict_from_cookiejar(response.cookies)))
-
-        api_data = response.json()     
-        self.logger.threaddebug(u"Sites response =\n{}".format(json.dumps(api_data, indent=4, sort_keys=True)))
-
-        siteList = api_data['data']
-        sites = {}
-        for site in siteList:
-            self.logger.threaddebug(u"Saving Site {} ({})".format(site['name'], site['desc']))
-            sites[site['name']] = {'description': site['desc']}
-                    
-            # Get active Clients for site
-
-            url = active_url.format(base_url, site['name'])
+            url = sites_url.format(base_url)
             response = session.get(url, headers=headers, cookies=cookies, verify=ssl_verify)
             if not response.status_code == requests.codes.ok:
-                self.logger.error(u"UniFi Controller Get Active Clients Error: {}".format(response.status_code))
+                self.logger.error(u"UniFi Controller Get Sites Error: {}".format(response.status_code))
                 device.updateStateOnServer(key='status', value="Login Error")
                 device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
                 return
 
-            api_data = response.json()
-            self.logger.threaddebug(u"Active clients response =\n{}".format(json.dumps(api_data, indent=4, sort_keys=True)))
+            self.logger.threaddebug(u"UniFi Controller Sites Response: {}".format(response))
 
-            responseList = api_data['data']
-            actives = {}
-            for client in responseList:
-                name = client.get('name', client.get('hostname', '--none--'))
-                ip = client.get('ip', "--unknown--")
-                mac = client.get('mac', "--unknown--")
-                wired = "Wired" if client['is_wired'] else "Wireless"
-                self.logger.threaddebug(u"Saving {} Active Client {} - {} ({})".format(wired, name, ip, mac))
-                actives[mac] = client
-            sites[site['name']]['actives'] = actives
+            siteList = response.json()['data']
+            sites = {}
+            for site in siteList:
+                self.logger.threaddebug(u"Saving Site {} ({})".format(site['name'], site['desc']))
+                sites[site['name']] = {'description': site['desc']}
+                    
+                # Get active Clients for site
+
+                url = active_url.format(base_url, site['name'])
+                response = session.get(url, headers=headers, cookies=cookies, verify=ssl_verify)
+                if not response.status_code == requests.codes.ok:
+                    self.logger.error(u"UniFi Controller Get Active Clients Error: {}".format(response.status_code))
+                    device.updateStateOnServer(key='status', value="Login Error")
+                    device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
+                    return
+
+                self.logger.threaddebug(u"UniFi Controller Active Clients Response: {}".format(response))
+
+                responseList = response.json()['data']
+                actives = {}
+                for client in responseList:
+                    name = client.get('name', client.get('hostname', '--none--'))
+                    ip = client.get('ip', "--unknown--")
+                    mac = client.get('mac', "--unknown--")
+                    wired = "Wired" if client['is_wired'] else "Wireless"
+                    self.logger.threaddebug(u"Saving {} Active Client {} - {} ({})".format(wired, name, ip, mac))
+                    actives[mac] = client
+                sites[site['name']]['actives'] = actives
             
-           
-            # Get UniFi Devices for the site
+                # Get UniFi Devices for the site
 
-            url = device_url.format(base_url, site['name'])
-            response = session.get(url, headers=headers, cookies=cookies, verify=ssl_verify)
-            if not response.status_code == requests.codes.ok:
-                self.logger.error("UniFi Controller Get Devices Error: {}".format(response.status_code))
-            response.raise_for_status()
+                url = device_url.format(base_url, site['name'])
+                response = session.get(url, headers=headers, cookies=cookies, verify=ssl_verify)
+                if not response.status_code == requests.codes.ok:
+                    self.logger.error("UniFi Controller Get Devices Error: {}".format(response.status_code))
+                response.raise_for_status()
 
-            api_data = response.json()
-            self.logger.threaddebug("Devices response =\n{}".format(json.dumps(api_data, indent=4, sort_keys=True)))
+                self.logger.threaddebug(u"UniFi Controller Devices Response: {}".format(response))
 
-            responseList = api_data['data']
-            uDevices = {}            
-            for uDevice in responseList:
-                name = uDevice.get('name', uDevice.get('hostname', '--none--'))
-                ip = uDevice.get('ip', "--unknown--")
-                mac = uDevice.get('mac', "--unknown--")
-                self.logger.threaddebug(u"Saving UniFi device {} - {} ({})".format(name, ip, mac))
-                uDevices[mac] = uDevice
-            sites[site['name']]['devices'] = uDevices
+                responseList = response.json()['data']
+                uDevices = {}            
+                for uDevice in responseList:
+                    name = uDevice.get('name', uDevice.get('hostname', '--none--'))
+                    ip = uDevice.get('ip', "--unknown--")
+                    mac = uDevice.get('mac', "--unknown--")
+                    self.logger.threaddebug(u"Saving UniFi device {} - {} ({})".format(name, ip, mac))
+                    uDevices[mac] = uDevice
+                sites[site['name']]['devices'] = uDevices
 
-        # all done, save the data
+            # all done, save the data
         
-        self.unifi_controllers[device.id]['sites'] = sites
+            self.unifi_controllers[device.id]['sites'] = sites
 
 
     def updateUniFiClient(self, device):
