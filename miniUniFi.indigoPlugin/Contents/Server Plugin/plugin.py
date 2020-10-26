@@ -175,12 +175,11 @@ class Plugin(indigo.PluginBase):
     def is_unifi_os(self, device):
         '''
         check for Unifi OS controller eg UDM, UDM Pro.
-        HEAD request will return 200 id Unifi OS,
+        HEAD request will return 200 if Unifi OS,
         if this is a Standard controller, we will get 302 (redirect) to /manage
         '''
         ssl_verify = device.pluginProps.get('ssl_verify', False)
         if ssl_verify is False:
-            # Disable insecure warnings - our server doesn't have root certs
             from requests.packages.urllib3.exceptions import InsecureRequestWarning
             requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
     
@@ -567,7 +566,7 @@ class Plugin(indigo.PluginBase):
             self.logger.debug(u"get_client_list: no site specified, returning empty list")
             return []
 
-        self.logger.debug(u"get_client_list: using site {} - {}".format(valuesDict["unifi_site"], site['description']))
+        self.logger.debug(u"get_client_list: using site {} ({})".format(valuesDict["unifi_site"], site['description']))
         self.last_site = valuesDict["unifi_site"]
 
         wired = (filter == "Wired")
@@ -580,7 +579,7 @@ class Plugin(indigo.PluginBase):
         if targetId:
             try:
                 dev = indigo.devices[targetId]
-                client_list.insert(0, (dev.pluginProps["address"], dev.name))
+                client_list.insert(0, (dev.pluginProps["address"], dev.pluginProps.get("UniFiName", dev.name)))
             except:
                 pass
                                             
@@ -588,7 +587,7 @@ class Plugin(indigo.PluginBase):
         return client_list     
 
     def get_device_list(self, filter="", valuesDict=None, typeId="", targetId=0):
-        self.logger.debug(u"get_client_list: typeId = {}, targetId = {}, filter = {}, valuesDict = {}".format(typeId, targetId, filter, valuesDict))
+        self.logger.debug(u"get_device_list: typeId = {}, targetId = {}, filter = {}, valuesDict = {}".format(typeId, targetId, filter, valuesDict))
 
         try:
             site = self.unifi_controllers[int(valuesDict["unifi_controller"])]['sites'][valuesDict["unifi_site"]]
@@ -596,7 +595,7 @@ class Plugin(indigo.PluginBase):
             self.logger.debug(u"get_device_list: no site specified, returning empty list")
             return []
 
-        self.logger.debug(u"get_device_list: using site {} - {}".format(valuesDict["unifi_site"], site['description']))
+        self.logger.debug(u"get_device_list: using site {} ({})".format(valuesDict["unifi_site"], site['description']))
         self.last_site = valuesDict["unifi_site"]
 
         device_list = [
@@ -608,19 +607,38 @@ class Plugin(indigo.PluginBase):
         if targetId:
             try:
                 dev = indigo.devices[targetId]
-                device_list.insert(0, (dev.pluginProps["address"], dev.name))
             except:
                 pass
-                                                                                            
+            else:
+                name = dev.pluginProps.get("UniFiName", None)
+                if name and len(name):
+                    device_list.insert(0, (dev.pluginProps["address"], name))
+                                                                                
         self.logger.threaddebug(u"get_device_list: device_list for {} ({}) = {}".format(typeId, filter, device_list))
         return device_list     
 
     # doesn't do anything, just needed to force other menus to dynamically refresh
     def menuChanged(self, valuesDict = None, typeId = None, devId = None):
         return valuesDict
-
-    ########################################
-                        
+  
+    #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    # This routine will be called in order to determine if a communication-related
+    # property of the device has changed; such as serial port, IP, etc. This allows you
+    # to override (return True/False) if the device must stop/restart communication after
+    # a property change. If True is returned the deviceStopComm / deviceStartComm are
+    # called to pick up the change. By default ALL properties are considered comm related!
+    #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    def didDeviceCommPropertyChange(self, origDev, newDev):
+        self.logger.threaddebug("didDeviceCommPropertyChange: {} -> {}".format(origDev.name, newDev.name))
+        self.logger.threaddebug("origDev:\{}".format(origDev))
+        self.logger.threaddebug("newDev:\{}".format(newDev))
+        
+        return super(Plugin, self).didDeviceCommPropertyChange(origDev, newDev)
+        
+    #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    # This routine returns the UI values for the device configuration screen prior to it
+    # being shown to the user; it is sometimes used to setup default values at runtime
+    #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     def getDeviceConfigUiValues(self, pluginProps, typeId, devId):
         valuesDict = indigo.Dict(pluginProps)
         errorsDict = indigo.Dict()
@@ -634,6 +652,79 @@ class Plugin(indigo.PluginBase):
             valuesDict["unifi_site"] = self.last_site
         
         return (valuesDict, errorsDict)
+
+    #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    # This routine will validate the device configuration dialog when the user attempts
+    # to save the data
+    #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    def validateDeviceConfigUi(self, valuesDict, typeId, devId):
+        self.logger.debug("validateDeviceConfigUi: devId = {}, typeId = {}, valuesDict =\n{}".format(devId, typeId, valuesDict))
+        if typeId in ['unifiClient', 'unifiWirelessClient']:
+            controller = int(valuesDict['unifi_controller'])        
+            site = valuesDict['unifi_site']        
+            uClient = valuesDict['address']
+            client_data = {}
+        
+            try:
+                client_data = self.unifi_controllers[controller]['sites'][site]['actives'][uClient]
+            except:
+                self.logger.debug(u"validateDeviceConfigUi: client_data not found")
+            else:
+                valuesDict['UniFiName'] = client_data.get('hostname', None)
+
+        elif typeId == 'unifiDevice':
+            controller = int(valuesDict['unifi_controller'])        
+            site = valuesDict['unifi_site']        
+            uClient = valuesDict['address']
+            client_data = {}
+
+            try:
+                client_data = self.unifi_controllers[controller]['sites'][site]['devices'][uClient]
+            except:
+                pass
+            else:
+                valuesDict['UniFiName'] = client_data.get('name', client_data.get('hostname', None))
+        return (True, valuesDict)
+
+    #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    # This routine will be called whenever the user has closed the device config dialog
+    # either by save or cancel.  This routine cannot change anything (read only).
+    #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    def closedDeviceConfigUi(self, valuesDict, userCancelled, typeId, devId):
+        self.logger.debug("closedDeviceConfigUi: devId = {}, typeId = {}, userCancelled = {}, valuesDict =\n{}".format(devId, typeId, userCancelled, valuesDict))
+            
+
+    #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    # This routine returns the UI values for the configuration dialog; the default is to
+    # simply return the self.pluginPrefs dictionary. It can be used to dynamically set
+    # defaults at run time
+    #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    def getPrefsConfigUiValues(self):
+        self.logger.debug("getPrefsConfigUiValues:")
+        return super(Plugin, self).getPrefsConfigUiValues()
+
+    #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    # This routine is called in order to validate the inputs within the plugin config
+    # dialog box. Return is a (True|False = isOk, valuesDict = values to save, errorMsgDict
+    # = errors to display (if necessary))
+    #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    def validatePrefsConfigUi(self, valuesDict):
+        self.logger.debug("validatePrefsConfigUi: valuesDict = {}".format(valuesDict))
+
+        # possible to do real validation and return an error if it fails, such as:      
+        #errorMsgDict = indigo.Dict()
+        #errorMsgDict[u"requiredFieldChk"] = u"You must check this box to continue"
+        #return (False, valuesDict, errorMsgDict)
+        
+        # if no errors, return True and the values as a tuple
+        return (True, valuesDict)
+
+    #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    # This routine is called once the user has exited the preferences dialog
+    #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    def closedPrefsConfigUi(self, valuesDict, userCancelled):
+        self.logger.debug("closedPrefsConfigUi: userCancelled = {}, valuesDict= {}".format(userCancelled, valuesDict))
+                    
 
 
     def menuDumpControllers(self):
