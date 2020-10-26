@@ -147,15 +147,6 @@ class Plugin(indigo.PluginBase):
         elif device.deviceTypeId == 'unifiDevice':
             del self.unifi_devices[device.id]
 
-    def validateDeviceConfigUi(self, valuesDict, typeId, devId):
-
-        if not len(valuesDict.get('port', None)):       # no port specified
-            if valuesDict['controllerType'] == "UDMPro":
-                valuesDict['port'] = 443
-            else:
-                valuesDict['port'] = 8443
-
-        return (True, valuesDict)
 
     ########################################
     #
@@ -251,11 +242,11 @@ class Plugin(indigo.PluginBase):
                 response = requests.head(base_url, verify=ssl_verify, timeout=10.0)
             except Exception as err:
                 self.logger.error(u"UniFi Controller Test Connection Error: {}".format(err))
-            self.logger.debug(u"UniFi Controller Test Status: {}".format(response.status_code))
-            self.logger.debug(u"UniFi Controller Test URL: {}".format(response.url))
-            self.logger.debug(u"UniFi Controller Test Headers: {}".format(response.headers))
-            self.logger.debug(u"UniFi Controller Test Cookies: {}".format(requests.utils.dict_from_cookiejar(response.cookies)))
-            self.logger.debug(u"UniFi Controller Test Content: {}".format(response.text))
+            self.logger.threaddebug(u"UniFi Controller Test Status: {}".format(response.status_code))
+            self.logger.threaddebug(u"UniFi Controller Test URL: {}".format(response.url))
+            self.logger.threaddebug(u"UniFi Controller Test Headers: {}".format(response.headers))
+            self.logger.threaddebug(u"UniFi Controller Test Cookies: {}".format(requests.utils.dict_from_cookiejar(response.cookies)))
+            self.logger.threaddebug(u"UniFi Controller Test Content: {}".format(response.text))
 
             unifi_os = self.is_unifi_os(device)
 
@@ -280,11 +271,11 @@ class Plugin(indigo.PluginBase):
                 ws_cookies = {"unifises": cookies.get('unifises'), "csrf_token": cookies.get('csrf_token')}
             self.controller_cookies[device.id] = ws_cookies
             
-            self.logger.debug(u"UniFi Controller Login Status: {}".format(response.status_code))
-            self.logger.debug(u"UniFi Controller Login URL: {}".format(response.url))
-            self.logger.debug(u"UniFi Controller Login Headers: {}".format(response.headers))
-            self.logger.debug(u"UniFi Controller Login Cookies: {}".format(cookies))
-            self.logger.debug(u"UniFi Controller Login Content: {}".format(response.text))
+            self.logger.threaddebug(u"UniFi Controller Login Status: {}".format(response.status_code))
+            self.logger.threaddebug(u"UniFi Controller Login URL: {}".format(response.url))
+            self.logger.threaddebug(u"UniFi Controller Login Headers: {}".format(response.headers))
+            self.logger.threaddebug(u"UniFi Controller Login Cookies: {}".format(cookies))
+            self.logger.threaddebug(u"UniFi Controller Login Content: {}".format(response.text))
                 
             if response.status_code != requests.codes.ok:
                 device.updateStateOnServer(key='status', value="Login Error")
@@ -307,10 +298,10 @@ class Plugin(indigo.PluginBase):
             device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
             return
 
-        self.logger.debug(u"UniFi Controller Sites Status: {}".format(response.status_code))
-        self.logger.debug(u"UniFi Controller Sites URL: {}".format(response.url))
-        self.logger.debug(u"UniFi Controller Sites Headers: {}".format(response.headers))
-        self.logger.debug(u"UniFi Controller Sites Cookies: {}".format(requests.utils.dict_from_cookiejar(response.cookies)))
+        self.logger.threaddebug(u"UniFi Controller Sites Status: {}".format(response.status_code))
+        self.logger.threaddebug(u"UniFi Controller Sites URL: {}".format(response.url))
+        self.logger.threaddebug(u"UniFi Controller Sites Headers: {}".format(response.headers))
+        self.logger.threaddebug(u"UniFi Controller Sites Cookies: {}".format(requests.utils.dict_from_cookiejar(response.cookies)))
 
         api_data = response.json()     
         self.logger.threaddebug(u"Sites response =\n{}".format(json.dumps(api_data, indent=4, sort_keys=True)))
