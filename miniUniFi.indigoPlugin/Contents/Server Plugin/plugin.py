@@ -342,7 +342,7 @@ class Plugin(indigo.PluginBase):
                 mac = client.get('mac', "--unknown--")
                 wired = "Wired" if client['is_wired'] else "Wireless"
                 self.logger.threaddebug(u"Saving {} Active Client {} - {} ({})".format(wired, name, ip, mac))
-                actives[client['mac']] = client
+                actives[mac] = client
             sites[site['name']]['actives'] = actives
             
            
@@ -360,8 +360,11 @@ class Plugin(indigo.PluginBase):
             responseList = api_data['data']
             uDevices = {}            
             for uDevice in responseList:
-                self.logger.threaddebug("Saving UniFi device {} - {} ({})".format(uDevice['name'], uDevice['ip'], uDevice['mac']))
-                uDevices[uDevice['mac']] = uDevice
+                name = uDevice.get('name', uDevice.get('hostname', '--none--'))
+                ip = uDevice.get('ip', "--unknown--")
+                mac = uDevice.get('mac', "--unknown--")
+                self.logger.threaddebug(u"Saving UniFi device {} - {} ({})".format(name, ip, mac))
+                uDevices[mac] = uDevice
             sites[site['name']]['devices'] = uDevices
 
         # all done, save the data
