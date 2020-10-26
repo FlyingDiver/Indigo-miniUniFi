@@ -74,6 +74,7 @@ class Plugin(indigo.PluginBase):
         self.last_controller = None
         self.last_site = u'default'
         self.controller_sessions = {}           # save session object to stay logged in
+        self.controller_cookies = {}           # save session object to stay logged in
         
         
        
@@ -184,6 +185,29 @@ class Plugin(indigo.PluginBase):
     #
     ########################################
 
+    def is_unifi_os(self, device):
+        '''
+        check for Unifi OS controller eg UDM, UDM Pro.
+        HEAD request will return 200 id Unifi OS,
+        if this is a Standard controller, we will get 302 (redirect) to /manage
+        '''
+        ssl_verify = device.pluginProps.get('ssl_verify', False)
+        if ssl_verify is False:
+            # Disable insecure warnings - our server doesn't have root certs
+            from requests.packages.urllib3.exceptions import InsecureRequestWarning
+            requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+    
+        r = requests.head('https://{}:{}'.format(device.pluginProps['address'], device.pluginProps['port']), verify=ssl_verify, timeout=10.0)
+        if r.status_code == 200:
+            self.logger.debug('{}: Unifi OS controller detected'.format(device.name))
+            return True
+        if r.status_code == 302:
+            self.logger.debug('{}: Unifi Standard controller detected'.format(device.name))
+            return False
+        self.logger.warning('{}: Unable to determine controller type - using Unifi Standard controller'.format(device.name))
+        return False
+        
+
     def updateUniFiController(self, device):
     
         self.logger.debug(u"{}: Updating controller".format(device.name))
@@ -191,7 +215,7 @@ class Plugin(indigo.PluginBase):
         headers = {"Accept": "application/json", "Content-Type": "application/json"}
         login_headers = {"Accept": "application/json", "Content-Type": "application/json", "referer": "/login"}
         base_url = "https://{}:{}/".format(device.pluginProps['address'], device.pluginProps['port'])
-        login_body = { "username": device.pluginProps['username'], "password": device.pluginProps['password']}
+        login_body = { "username": device.pluginProps['username'], "password": device.pluginProps['password'], 'strict': True}
         ssl_verify = device.pluginProps.get('ssl_verify', False)
 
         # set up URL templates based on controller type
@@ -218,41 +242,51 @@ class Plugin(indigo.PluginBase):
             self.logger.error(u"UniFi Unknown Controller Type Error: {}".format(device.pluginProps['controllerType']))
             return
                 
+        ws_cookies = self.controller_cookies.get(device.id, None)
         session = self.controller_sessions.get(device.id, None)
         if not session:
+            self.logger.debug(u"{}: UniFi Controller Login".format(device.name))
         
+            try:
+                response = requests.head(base_url, verify=ssl_verify, timeout=10.0)
+            except Exception as err:
+                self.logger.error(u"UniFi Controller Test Connection Error: {}".format(err))
+            self.logger.debug(u"UniFi Controller Test Status: {}".format(response.status_code))
+            self.logger.debug(u"UniFi Controller Test URL: {}".format(response.url))
+            self.logger.debug(u"UniFi Controller Test Headers: {}".format(response.headers))
+            self.logger.debug(u"UniFi Controller Test Cookies: {}".format(requests.utils.dict_from_cookiejar(response.cookies)))
+            self.logger.debug(u"UniFi Controller Test Content: {}".format(response.text))
+
+            unifi_os = self.is_unifi_os(device)
+
             session = requests.Session()
             self.controller_sessions[device.id] = session
             
-            # test
-    
-            try:
-                response = session.post(base_url, verify=ssl_verify)
-            except Exception as err:
-                self.logger.error(u"UniFi Controller Test Connection Error: {}".format(err))
-            self.logger.info(u"UniFi Controller Test Status: {}".format(response.status_code))
-            self.logger.info(u"UniFi Controller Test URL: {}".format(response.url))
-            self.logger.info(u"UniFi Controller Test Headers: {}".format(response.headers))
-            self.logger.info(u"UniFi Controller Test Content: {}".format(response.text))
-
-
             # login
             
             try:
                 url = login_url.format(base_url)
-                response = session.post(url, headers=login_headers, json=login_body, verify=ssl_verify)
+                response = session.post(url, headers=login_headers, json=login_body, verify=ssl_verify, timeout=10.0)
             except Exception as err:
                 self.logger.error(u"UniFi Controller Login Connection Error: {}".format(err))
                 device.updateStateOnServer(key='status', value="Connection Error")
                 device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
                 return
             
-            if response.status_code != requests.codes.ok:
-                self.logger.info(u"UniFi Controller Login Status: {}".format(response.status_code))
-                self.logger.info(u"UniFi Controller Login URL: {}".format(response.url))
-                self.logger.info(u"UniFi Controller Login Headers: {}".format(response.headers))
-                self.logger.info(u"UniFi Controller Login Content: {}".format(response.text))
+            cookies = requests.utils.dict_from_cookiejar(session.cookies)
+            if unifi_os:
+                ws_cookies = {"TOKEN": cookies.get('TOKEN')}
+            else:
+                ws_cookies = {"unifises": cookies.get('unifises'), "csrf_token": cookies.get('csrf_token')}
+            self.controller_cookies[device.id] = ws_cookies
+            
+            self.logger.debug(u"UniFi Controller Login Status: {}".format(response.status_code))
+            self.logger.debug(u"UniFi Controller Login URL: {}".format(response.url))
+            self.logger.debug(u"UniFi Controller Login Headers: {}".format(response.headers))
+            self.logger.debug(u"UniFi Controller Login Cookies: {}".format(cookies))
+            self.logger.debug(u"UniFi Controller Login Content: {}".format(response.text))
                 
+            if response.status_code != requests.codes.ok:
                 device.updateStateOnServer(key='status', value="Login Error")
                 device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
                 return
@@ -263,13 +297,20 @@ class Plugin(indigo.PluginBase):
         
         # Get Sites
 
+        self.logger.debug(u"{}: UniFi Controller Getting Sites".format(device.name))
+
         url = sites_url.format(base_url)
-        response = session.get(url, headers=headers, verify=ssl_verify)
+        response = session.get(url, headers=headers, cookies=ws_cookies, verify=ssl_verify)
         if not response.status_code == requests.codes.ok:
             self.logger.error(u"UniFi Controller Get Sites Error: {}".format(response.status_code))
             device.updateStateOnServer(key='status', value="Login Error")
             device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
             return
+
+        self.logger.debug(u"UniFi Controller Sites Status: {}".format(response.status_code))
+        self.logger.debug(u"UniFi Controller Sites URL: {}".format(response.url))
+        self.logger.debug(u"UniFi Controller Sites Headers: {}".format(response.headers))
+        self.logger.debug(u"UniFi Controller Sites Cookies: {}".format(requests.utils.dict_from_cookiejar(response.cookies)))
 
         api_data = response.json()     
         self.logger.threaddebug(u"Sites response =\n{}".format(json.dumps(api_data, indent=4, sort_keys=True)))
@@ -283,7 +324,7 @@ class Plugin(indigo.PluginBase):
             # Get active Clients for site
 
             url = active_url.format(base_url, site['name'])
-            response = session.get(url, headers=headers, verify=ssl_verify)
+            response = session.get(url, headers=headers, cookies=ws_cookies, verify=ssl_verify)
             if not response.status_code == requests.codes.ok:
                 self.logger.error(u"UniFi Controller Get Active Clients Error: {}".format(response.status_code))
                 device.updateStateOnServer(key='status', value="Login Error")
@@ -308,7 +349,7 @@ class Plugin(indigo.PluginBase):
             # Get UniFi Devices for the site
 
             url = device_url.format(base_url, site['name'])
-            response = session.get(url, headers=headers, verify=ssl_verify)
+            response = session.get(url, headers=headers, cookies=ws_cookies, verify=ssl_verify)
             if not response.status_code == requests.codes.ok:
                 self.logger.error("UniFi Controller Get Devices Error: {}".format(response.status_code))
             response.raise_for_status()
