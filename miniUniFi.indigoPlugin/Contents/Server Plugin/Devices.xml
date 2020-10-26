@@ -11,21 +11,13 @@
                 <Label>Port:</Label>
             </Field>
             <Field id="portLabel" type="label" fontSize="small" fontColor="darkgray">
-                <Label>Use 8443 for standard controllers, 443 for UDM Pro controller</Label>
+                <Label>Only for standard controllers.</Label>
             </Field>
             <Field id="username" type="textfield" defaultValue="Admin" tooltip="Enter User Name for gateway.">
                 <Label>Username:</Label>
             </Field>
             <Field id="password" type="textfield" defaultValue="" secure="true" tooltip="Enter Password for gateway.">
                 <Label>Password:</Label>
-            </Field>
-            <Field id="controllerType" type="menu" defaultValue="cloudKey">
-                <Label>Controller Type:</Label>
-                <List>
-                    <Option value="cloudKey">Cloud Key or Software Controller</Option>
-                    <Option value="UDM">UniFi Dream Machine</Option>
-                    <Option value="UDMPro">UniFi Dream Machine Pro</Option>
-                </List>
             </Field>
             <Field id="ssl_verify" type="checkbox" defaultValue="false" tooltip="Verify SSL Certificates">
                 <Label>Verify SSL:</Label>
@@ -110,7 +102,7 @@
         <Name>UniFi Device</Name>
         <ConfigUI>
             <Field id="SupportsOnState" type="checkbox" defaultValue="true" hidden="true" />
-            <Field id="SupportsSensorValue" type="checkbox" defaultValue="true" hidden="true" />
+            <Field id="SupportsSensorValue" type="checkbox" defaultValue="false" hidden="true" />
             <Field id="SupportsStatusRequest" type="checkbox" defaultValue="false" hidden="true" />
             
             <Field id="unifi_controller" type="menu">
