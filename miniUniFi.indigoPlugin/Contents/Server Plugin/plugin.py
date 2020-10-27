@@ -374,7 +374,7 @@ class Plugin(indigo.PluginBase):
                 device.updateStateOnServer(key="onOffState", value=False, uiValue=status)
                 device.updateStateOnServer(key='offline_seconds', value=offline_seconds)
                 device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
-                self.logger.debug(u"{}: {} for {} seconds".format(device.name, status))
+                self.logger.debug(u"{}: {} for {} seconds".format(device.name, status, offline_seconds))
 
             else:
                 self.logger.debug(u"{}: Online @ {}".format(device.name, essid))
