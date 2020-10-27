@@ -294,7 +294,7 @@ class Plugin(indigo.PluginBase):
                 url = device_url.format(base_url, site['name'])
                 response = session.get(url, headers=headers, cookies=cookies, verify=ssl_verify)
                 if not response.status_code == requests.codes.ok:
-                    self.logger.error("UniFi Controller Get Devices Error: {}".format(response.status_code))
+                    self.logger.error(u"UniFi Controller Get Devices Error: {}".format(response.status_code))
                 response.raise_for_status()
 
                 self.logger.threaddebug(u"UniFi Controller Devices Response: {}".format(response))
@@ -387,7 +387,7 @@ class Plugin(indigo.PluginBase):
 
     def updateUniFiDevice(self, device):
     
-        self.logger.debug("{}: Updating UniFi Device: {}".format(device.name, device.address))
+        self.logger.debug(u"{}: Updating UniFi Device: {}".format(device.name, device.address))
         
         controller = int(device.pluginProps['unifi_controller'])        
         site = device.pluginProps['unifi_site']        
@@ -492,7 +492,7 @@ class Plugin(indigo.PluginBase):
     ########################################
 
     def get_controller_list(self, filter="", valuesDict=None, typeId="", targetId=0):
-        self.logger.debug("get_controller_list: typeId = {}, targetId = {}, valuesDict = {}".format(typeId, targetId, valuesDict))
+        self.logger.debug(u"get_controller_list: typeId = {}, targetId = {}, valuesDict = {}".format(typeId, targetId, valuesDict))
         controller_list = [
             (devID, indigo.devices[devID].name)
             for devID in self.unifi_controllers
@@ -594,9 +594,9 @@ class Plugin(indigo.PluginBase):
     # called to pick up the change. By default ALL properties are considered comm related!
     #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     def didDeviceCommPropertyChange(self, origDev, newDev):
-        self.logger.threaddebug("didDeviceCommPropertyChange: {} -> {}".format(origDev.name, newDev.name))
-        self.logger.threaddebug("origDev:\{}".format(origDev))
-        self.logger.threaddebug("newDev:\{}".format(newDev))
+        self.logger.threaddebug(u"didDeviceCommPropertyChange: {} -> {}".format(origDev.name, newDev.name))
+        self.logger.threaddebug(u"origDev:\{}".format(origDev))
+        self.logger.threaddebug(u"newDev:\{}".format(newDev))
         
         return super(Plugin, self).didDeviceCommPropertyChange(origDev, newDev)
         
@@ -607,7 +607,7 @@ class Plugin(indigo.PluginBase):
     def getDeviceConfigUiValues(self, pluginProps, typeId, devId):
         valuesDict = indigo.Dict(pluginProps)
         errorsDict = indigo.Dict()
-        self.logger.debug("getDeviceConfigUiValues: devId = {}, typeId = {}, pluginProps =\n{}".format(devId, typeId, pluginProps))
+        self.logger.debug(u"getDeviceConfigUiValues: devId = {}, typeId = {}, pluginProps =\n{}".format(devId, typeId, pluginProps))
 
         if typeId == 'unifiController':
             pass
@@ -623,7 +623,7 @@ class Plugin(indigo.PluginBase):
     # to save the data
     #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     def validateDeviceConfigUi(self, valuesDict, typeId, devId):
-        self.logger.debug("validateDeviceConfigUi: devId = {}, typeId = {}, valuesDict =\n{}".format(devId, typeId, valuesDict))
+        self.logger.debug(u"validateDeviceConfigUi: devId = {}, typeId = {}, valuesDict =\n{}".format(devId, typeId, valuesDict))
         if typeId in ['unifiClient', 'unifiWirelessClient']:
             controller = int(valuesDict['unifi_controller'])        
             site = valuesDict['unifi_site']        
@@ -656,7 +656,7 @@ class Plugin(indigo.PluginBase):
     # either by save or cancel.  This routine cannot change anything (read only).
     #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     def closedDeviceConfigUi(self, valuesDict, userCancelled, typeId, devId):
-        self.logger.debug("closedDeviceConfigUi: devId = {}, typeId = {}, userCancelled = {}, valuesDict =\n{}".format(devId, typeId, userCancelled, valuesDict))
+        self.logger.debug(u"closedDeviceConfigUi: devId = {}, typeId = {}, userCancelled = {}, valuesDict =\n{}".format(devId, typeId, userCancelled, valuesDict))
             
 
     #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -665,7 +665,7 @@ class Plugin(indigo.PluginBase):
     # defaults at run time
     #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     def getPrefsConfigUiValues(self):
-        self.logger.debug("getPrefsConfigUiValues:")
+        self.logger.debug(u"getPrefsConfigUiValues:")
         return super(Plugin, self).getPrefsConfigUiValues()
 
     #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -674,7 +674,7 @@ class Plugin(indigo.PluginBase):
     # = errors to display (if necessary))
     #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     def validatePrefsConfigUi(self, valuesDict):
-        self.logger.debug("validatePrefsConfigUi: valuesDict = {}".format(valuesDict))
+        self.logger.debug(u"validatePrefsConfigUi: valuesDict = {}".format(valuesDict))
 
         # possible to do real validation and return an error if it fails, such as:      
         #errorMsgDict = indigo.Dict()
@@ -688,7 +688,7 @@ class Plugin(indigo.PluginBase):
     # This routine is called once the user has exited the preferences dialog
     #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     def closedPrefsConfigUi(self, valuesDict, userCancelled):
-        self.logger.debug("closedPrefsConfigUi: userCancelled = {}, valuesDict= {}".format(userCancelled, valuesDict))
+        self.logger.debug(u"closedPrefsConfigUi: userCancelled = {}, valuesDict= {}".format(userCancelled, valuesDict))
                     
 
 
