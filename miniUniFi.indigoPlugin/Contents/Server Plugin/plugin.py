@@ -112,6 +112,13 @@ class Plugin(indigo.PluginBase):
         except self.StopThread:
             pass
 
+    def update_plugin_property(self, object, propertyname, new_value = ""):
+        newProps = object.pluginProps
+        newProps.update( {propertyname : new_value} )
+        object.replacePluginPropsOnServer(newProps)
+        return None
+
+
     def deviceStartComm(self, device):
             
         self.logger.info(u"{}: Starting Device".format(device.name))
@@ -408,6 +415,8 @@ class Plugin(indigo.PluginBase):
 
         if not offline:
             self.logger.threaddebug(u"device_data =\n{}".format(json.dumps(device_data, indent=4, sort_keys=True)))
+
+            self.update_plugin_property(device, 'version', device_data['version']) 
         
             states_list = []
             if device_data:
@@ -415,7 +424,6 @@ class Plugin(indigo.PluginBase):
     
             self.unifi_devices[device.id] = states_list
             device.stateListOrDisplayStateIdChanged()
-
             try:     
                 device.updateStatesOnServer(states_list)
             except TypeError as err:

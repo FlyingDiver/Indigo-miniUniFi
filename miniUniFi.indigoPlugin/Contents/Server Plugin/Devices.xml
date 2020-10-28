@@ -107,7 +107,6 @@
             <Field id="SupportsSensorValue" type="checkbox" defaultValue="false" hidden="true" />
             <Field id="SupportsStatusRequest" type="checkbox" defaultValue="false" hidden="true" />
             <Field id="UniFiName" type="textfield" defaultValue="" hidden="true" />
-            <Field id="Version" type="textfield" defaultValue="" hidden="true" />
             
             <Field id="unifi_controller" type="menu">
                 <Label>UniFi Controller:</Label>
