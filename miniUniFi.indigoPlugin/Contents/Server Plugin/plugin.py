@@ -36,6 +36,11 @@ def list_to_states(prefix, the_list, states_list):
         else:
             states_list.append({'key': safeKey(prefix + unicode(i)), 'value': the_list[i]})
    
+UniFiTypes = {
+    'ugw': 'UniFi Gateway',
+    'usw': 'UniFi Switch',
+    'uap': 'UniFi Access Point',
+    }
 
 ################################################################################
 class Plugin(indigo.PluginBase):
@@ -112,11 +117,6 @@ class Plugin(indigo.PluginBase):
         except self.StopThread:
             pass
 
-    def update_plugin_property(self, object, propertyname, new_value = ""):
-        newProps = object.pluginProps
-        newProps.update( {propertyname : new_value} )
-        object.replacePluginPropsOnServer(newProps)
-        return None
 
 
     def deviceStartComm(self, device):
@@ -416,8 +416,15 @@ class Plugin(indigo.PluginBase):
         if not offline:
             self.logger.threaddebug(u"device_data =\n{}".format(json.dumps(device_data, indent=4, sort_keys=True)))
 
-            self.update_plugin_property(device, 'version', device_data['version']) 
-        
+            self.logger.debug(u"{}: version = {}, type = {}, model = {}".format(device.name, device_data['version'], device_data['type'], device_data['model']))
+            newProps = device.pluginProps
+            newProps['version'] = device_data['version']
+            device.replacePluginPropsOnServer(newProps)
+
+            device.model = UniFiTypes.get(device_data['type'], 'Unknown')
+            device.subModel = device_data['model']
+            device.replaceOnServer()
+            
             states_list = []
             if device_data:
                 dict_to_states(u"", device_data, states_list)      
