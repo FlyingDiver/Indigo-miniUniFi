@@ -183,7 +183,11 @@ class Plugin(indigo.PluginBase):
             from requests.packages.urllib3.exceptions import InsecureRequestWarning
             requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
     
-        r = requests.head('https://{}:{}'.format(device.pluginProps['address'], device.pluginProps['port']), verify=ssl_verify, timeout=10.0)
+        try:
+            r = requests.head('https://{}:{}'.format(device.pluginProps['address'], device.pluginProps['port']), verify=ssl_verify, timeout=10.0)
+        except Exception as err:
+            self.logger.error(u"UniFi Controller OS Check Error: {}".format(err))
+
         if r.status_code == 200:
             self.logger.debug('{}: Unifi OS controller detected'.format(device.name))
             return True
@@ -364,7 +368,7 @@ class Plugin(indigo.PluginBase):
                 device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
                 last_seen = device.states.get('last_seen', None) 
                 if last_seen:
-                    offline_seconds = (datetime.now() - datetime.fromtimestamp(last_seen)).total_seconds()
+                    offline_seconds = int((datetime.now() - datetime.fromtimestamp(last_seen)).total_seconds())
                     minutes, seconds = divmod(offline_seconds, 60)
                     hours, minutes = divmod(minutes, 60)
                     status = u"Offline {:02}:{:02}:{:02}".format(int(hours), int(minutes), int(seconds))
@@ -379,6 +383,7 @@ class Plugin(indigo.PluginBase):
             else:
                 self.logger.debug(u"{}: Online @ {}".format(device.name, essid))
                 device.updateStateOnServer(key="onOffState", value=True, uiValue=u"Online @ {}".format(essid))
+                device.updateStateOnServer(key='offline_seconds', value=0)
                 device.updateStateImageOnServer(indigo.kStateImageSel.SensorOn)
         
         else:
@@ -649,6 +654,7 @@ class Plugin(indigo.PluginBase):
                 pass
             else:
                 valuesDict['UniFiName'] = client_data.get('name', client_data.get('hostname', None))
+                valuesDict['Version'] = client_data.get('version', None)
         return (True, valuesDict)
 
     #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
