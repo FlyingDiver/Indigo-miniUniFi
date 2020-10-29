@@ -1,9 +1,10 @@
 <?xml version="1.0"?>
 <Devices>
 
-    <Device id="unifiController" type="custom">
+    <Device id="unifiController" type="sensor">
         <Name>UniFi Controller</Name>
         <ConfigUI>
+			<Field id="SupportsStatusRequest" type="checkbox" defaultValue="true" hidden="true"/>
             <Field id="address" type="textfield"  defaultValue="" tooltip="Enter IP address or Hostname of controller.">
                 <Label>IP Address or Hostname:</Label>
             </Field>

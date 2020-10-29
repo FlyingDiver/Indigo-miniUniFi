@@ -12,12 +12,15 @@ from datetime import datetime
 requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
 # Indigo really doesn't like dicts with keys that start with a number or symbol...
+
 def safeKey(key):
     if not key[0].isalpha():
         return u'sk{}'.format(key.strip())
     else:
         return unicode(key.strip())
-        
+     
+# functions for converting lists and dicts into Indigo states
+   
 def dict_to_states(prefix, the_dict, states_list):
      for key in the_dict:
         if isinstance(the_dict[key], list):
@@ -37,10 +40,18 @@ def list_to_states(prefix, the_list, states_list):
             states_list.append({'key': safeKey(prefix + unicode(i)), 'value': the_list[i]})
    
 UniFiTypes = {
+    'uap': 'UniFi Access Point',
+    'udm': 'UniFi Dream Machine',
     'ugw': 'UniFi Gateway',
     'usw': 'UniFi Switch',
-    'uap': 'UniFi Access Point',
     }
+
+def nameFromClient(data):
+    return data.get('name', data.get('hostname', "Client @ {}".format(data.get('ip'))))
+
+def nameFromDevice(data):
+    return data.get('name', "{} @ {}".format(data.get('model'), data.get('ip')))
+
 
 ################################################################################
 class Plugin(indigo.PluginBase):
@@ -116,7 +127,6 @@ class Plugin(indigo.PluginBase):
             pass
 
 
-
     def deviceStartComm(self, device):
             
         self.logger.info(u"{}: Starting Device".format(device.name))
@@ -170,6 +180,17 @@ class Plugin(indigo.PluginBase):
             except:
                 self.updateFrequency = 60.0
 
+    ########################################
+    #
+    # General Action callback
+    #
+    ########################################
+
+    def actionControlUniversal(self, action, device):
+        self.logger.debug(u"{}: actionControlUniversal: {}".format(device.name, action.deviceAction))
+        if action.deviceAction == indigo.kUniversalAction.RequestStatus:
+            self.update_needed = True
+
 
     ########################################
     #
@@ -192,7 +213,8 @@ class Plugin(indigo.PluginBase):
             r = requests.head('https://{}:{}'.format(device.pluginProps['address'], device.pluginProps['port']), verify=ssl_verify, timeout=10.0)
         except Exception as err:
             self.logger.error(u"UniFi Controller OS Check Error: {}".format(err))
-
+            return False
+            
         if r.status_code == 200:
             self.logger.debug('{}: Unifi OS controller detected'.format(device.name))
             return True
@@ -274,7 +296,7 @@ class Plugin(indigo.PluginBase):
                 pass
             else:
                 newProps = device.pluginProps
-                version = newProps['version']
+                newProps['version'] = version
                 device.replacePluginPropsOnServer(newProps)
 
             device.updateStateOnServer(key='status', value="Login OK")
@@ -315,12 +337,9 @@ class Plugin(indigo.PluginBase):
                 responseList = response.json()['data']
                 actives = {}
                 for client in responseList:
-                    name = client.get('name', client.get('hostname', '--none--'))
-                    ip = client.get('ip', "--unknown--")
-                    mac = client.get('mac', "--unknown--")
                     wired = "Wired" if client['is_wired'] else "Wireless"
-                    self.logger.threaddebug(u"Saving {} Active Client {} - {} ({})".format(wired, name, ip, mac))
-                    actives[mac] = client
+                    self.logger.debug(u"Saving {} Active Client {}".format(wired, nameFromClient(client)))
+                    actives[client.get('mac')] = client
                 sites[site['name']]['actives'] = actives
             
                 # Get UniFi Devices for the site
@@ -336,11 +355,8 @@ class Plugin(indigo.PluginBase):
                 responseList = response.json()['data']
                 uDevices = {}            
                 for uDevice in responseList:
-                    name = uDevice.get('name', uDevice.get('hostname', '--none--'))
-                    ip = uDevice.get('ip', "--unknown--")
-                    mac = uDevice.get('mac', "--unknown--")
-                    self.logger.threaddebug(u"Saving UniFi device {} - {} ({})".format(name, ip, mac))
-                    uDevices[mac] = uDevice
+                    self.logger.debug(u"Saving UniFi device {}".format(nameFromDevice(uDevice))) 
+                    uDevices[uDevice.get('mac')] = uDevice
                 sites[site['name']]['devices'] = uDevices
 
             # all done, save the data
@@ -578,7 +594,7 @@ class Plugin(indigo.PluginBase):
 
         wired = (filter == "Wired")
         client_list = [
-            (mac, data.get('name', data.get('hostname', '--none--')))
+            (mac, nameFromClient(data))
            for mac, data in site['actives'].iteritems() if data.get('is_wired', False) == wired
         ]
         client_list.sort(key=lambda tup: tup[1])
@@ -606,7 +622,7 @@ class Plugin(indigo.PluginBase):
         self.last_site = valuesDict["unifi_site"]
 
         device_list = [
-            (mac, data.get('name', data.get('hostname', '--none--')))
+            (mac, nameFromDevice(data))
            for mac, data in site['devices'].iteritems()
         ]
         device_list.sort(key=lambda tup: tup[1])
@@ -677,21 +693,21 @@ class Plugin(indigo.PluginBase):
             except:
                 self.logger.debug(u"validateDeviceConfigUi: client_data not found")
             else:
-                valuesDict['UniFiName'] = client_data.get('hostname', None)
+                valuesDict['UniFiName'] = nameFromClient(client_data)
 
         elif typeId == 'unifiDevice':
             controller = int(valuesDict['unifi_controller'])        
             site = valuesDict['unifi_site']        
             uClient = valuesDict['address']
-            client_data = {}
+            device_data = {}
 
             try:
-                client_data = self.unifi_controllers[controller]['sites'][site]['devices'][uClient]
+                device_data = self.unifi_controllers[controller]['sites'][site]['devices'][uClient]
             except:
                 pass
             else:
-                valuesDict['UniFiName'] = client_data.get('name', client_data.get('hostname', None))
-                valuesDict['Version'] = client_data.get('version', None)
+                valuesDict['UniFiName'] = nameFromDevice(device_data)
+                valuesDict['Version'] = device_data.get('version', None)
         return (True, valuesDict)
 
     #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
