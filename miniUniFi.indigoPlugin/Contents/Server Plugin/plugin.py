@@ -219,7 +219,7 @@ class Plugin(indigo.PluginBase):
             unifi_os = self.is_unifi_os(device)
             if unifi_os:
                 login_url = "{}api/auth/login"
-                status_url = "{}status"
+                status_url = "{}proxy/network/status"
                 sites_url = "{}proxy/network/api/self/sites"     
                 active_url = "{}proxy/network/api/s/{}/stat/sta"
                 device_url = "{}proxy/network/api/s/{}/stat/device"
@@ -268,10 +268,14 @@ class Plugin(indigo.PluginBase):
 
             self.logger.threaddebug(u"UniFi Controller Status Response: {}".format(response.text))
 
-            meta = response.json()['meta']
-            newProps = device.pluginProps
-            newProps['version'] = meta['server_version']
-            device.replacePluginPropsOnServer(newProps)
+            try:
+                version = response.json()['meta']['server_version']
+            except:
+                pass
+            else:
+                newProps = device.pluginProps
+                version = newProps['version']
+                device.replacePluginPropsOnServer(newProps)
 
             device.updateStateOnServer(key='status', value="Login OK")
             device.updateStateImageOnServer(indigo.kStateImageSel.SensorOn)
