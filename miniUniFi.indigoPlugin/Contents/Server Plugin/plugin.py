@@ -145,6 +145,9 @@ class Plugin(indigo.PluginBase):
             self.unifi_devices[device.id] = None                        # discovered states for the device
             self.update_needed = True
 
+        device.stateListOrDisplayStateIdChanged()
+
+
     def deviceStopComm(self, device):
 
         self.logger.info(u"{}: Stopping Device".format(device.name))
@@ -159,26 +162,6 @@ class Plugin(indigo.PluginBase):
             del self.unifi_devices[device.id]
 
 
-    ########################################
-    #
-    # PluginConfig methods
-    #
-    ########################################
-
-    def closedPrefsConfigUi(self, valuesDict, userCancelled):
-        if not userCancelled:
-            try:
-                self.logLevel = int(valuesDict[u"logLevel"])
-            except:
-                self.logLevel = logging.INFO
-            self.indigo_log_handler.setLevel(self.logLevel)
-
-            try:
-                self.updateFrequency = float(valuesDict[u"updateFrequency"])
-                if self.updateFrequency < 30.0: 
-                    self.updateFrequency = 30.0
-            except:
-                self.updateFrequency = 60.0
 
     ########################################
     #
@@ -338,7 +321,7 @@ class Plugin(indigo.PluginBase):
                 actives = {}
                 for client in responseList:
                     wired = "Wired" if client['is_wired'] else "Wireless"
-                    self.logger.debug(u"Saving {} Active Client {}".format(wired, nameFromClient(client)))
+                    self.logger.threaddebug(u"Found {} Active Client {}".format(wired, nameFromClient(client)))
                     actives[client.get('mac')] = client
                 sites[site['name']]['actives'] = actives
             
@@ -355,7 +338,7 @@ class Plugin(indigo.PluginBase):
                 responseList = response.json()['data']
                 uDevices = {}            
                 for uDevice in responseList:
-                    self.logger.debug(u"Saving UniFi device {}".format(nameFromDevice(uDevice))) 
+                    self.logger.threaddebug(u"Found UniFi device {}".format(nameFromDevice(uDevice))) 
                     uDevices[uDevice.get('mac')] = uDevice
                 sites[site['name']]['devices'] = uDevices
 
@@ -644,19 +627,6 @@ class Plugin(indigo.PluginBase):
     def menuChanged(self, valuesDict = None, typeId = None, devId = None):
         return valuesDict
   
-    #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    # This routine will be called in order to determine if a communication-related
-    # property of the device has changed; such as serial port, IP, etc. This allows you
-    # to override (return True/False) if the device must stop/restart communication after
-    # a property change. If True is returned the deviceStopComm / deviceStartComm are
-    # called to pick up the change. By default ALL properties are considered comm related!
-    #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    def didDeviceCommPropertyChange(self, origDev, newDev):
-        self.logger.threaddebug(u"didDeviceCommPropertyChange: {} -> {}".format(origDev.name, newDev.name))
-        self.logger.threaddebug(u"origDev:\{}".format(origDev))
-        self.logger.threaddebug(u"newDev:\{}".format(newDev))
-        
-        return super(Plugin, self).didDeviceCommPropertyChange(origDev, newDev)
         
     #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     # This routine returns the UI values for the device configuration screen prior to it
@@ -748,9 +718,24 @@ class Plugin(indigo.PluginBase):
     #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     def closedPrefsConfigUi(self, valuesDict, userCancelled):
         self.logger.debug(u"closedPrefsConfigUi: userCancelled = {}, valuesDict= {}".format(userCancelled, valuesDict))
-                    
+        if not userCancelled:
+            try:
+                self.logLevel = int(valuesDict[u"logLevel"])
+            except:
+                self.logLevel = logging.INFO
+            self.indigo_log_handler.setLevel(self.logLevel)
+
+            try:
+                self.updateFrequency = float(valuesDict[u"updateFrequency"])
+                if self.updateFrequency < 30.0: 
+                    self.updateFrequency = 30.0
+            except:
+                self.updateFrequency = 60.0
 
 
+    #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    # Plugin Menu routines
+    #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     def menuDumpControllers(self):
         self.logger.debug(u"menuDumpControllers")
 
