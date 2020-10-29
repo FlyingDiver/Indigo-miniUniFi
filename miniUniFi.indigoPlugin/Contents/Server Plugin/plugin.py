@@ -219,7 +219,7 @@ class Plugin(indigo.PluginBase):
             unifi_os = self.is_unifi_os(device)
             if unifi_os:
                 login_url = "{}api/auth/login"
-                status_url = "{}api/auth/status"
+                status_url = "{}status"
                 sites_url = "{}proxy/network/api/self/sites"     
                 active_url = "{}proxy/network/api/s/{}/stat/sta"
                 device_url = "{}proxy/network/api/s/{}/stat/device"
