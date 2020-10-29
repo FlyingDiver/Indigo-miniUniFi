@@ -162,19 +162,6 @@ class Plugin(indigo.PluginBase):
             del self.unifi_devices[device.id]
 
 
-
-    ########################################
-    #
-    # General Action callback
-    #
-    ########################################
-
-    def actionControlUniversal(self, action, device):
-        self.logger.debug(u"{}: actionControlUniversal: {}".format(device.name, action.deviceAction))
-        if action.deviceAction == indigo.kUniversalAction.RequestStatus:
-            self.update_needed = True
-
-
     ########################################
     #
     # Data Retrieval methods
