@@ -7,4 +7,3 @@ Allows for monitoring the on/off-line state of network clients on a UniFi based 
 2. Create a "UniFi Client" device for network clients you want to monitor, specifying the controller, site managed by that controller, and device (by name).
 3. Create a "UniFi Device" device if you want o monitor status of UniFi equipment (APs, switches, gateways, etc).
 3. Create triggers based on the on/off status of the client device.  The Wireless Client devices also have an "offline_seconds" state that can be used for delayed triggering.
-4. 
