@@ -141,7 +141,7 @@ class Plugin(indigo.PluginBase):
             self.unifi_clients[device.id] = None                        # discovered states for the device
             self.update_needed = True
                 
-        elif device.deviceTypeId == 'unifiDevice':
+        elif device.deviceTypeId in ['unifiDevice', 'unifiAccessPoint']:
             self.unifi_devices[device.id] = None                        # discovered states for the device
             self.update_needed = True
 
@@ -444,20 +444,56 @@ class Plugin(indigo.PluginBase):
             except TypeError as err:
                 self.logger.error(u"{}: invalid state type in states_list: {}".format(device.name, states_list))   
 
-        uptime = device.states.get('sk_uptime', None) 
-        if offline or not uptime:
-            self.logger.debug(u"{}: Offline".format(device.name))
-            device.updateStateOnServer(key="onOffState", value=False, uiValue=u"Offline")
-            device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
-        else:
-            minutes, seconds = divmod(uptime, 60)
-            hours, minutes = divmod(minutes, 60)
-            days, hours = divmod(hours, 24)
-            status = u"Up {:02}:{:02}:{:02}:{:02}".format( int(days), int(hours), int(minutes), int(seconds))
-            self.logger.debug(u"{}: Online".format(device.name))
-            device.updateStateOnServer(key="onOffState", value=True, uiValue=status)
-            device.updateStateImageOnServer(indigo.kStateImageSel.SensorOn)
+        if device.deviceTypeId == "unifiDevice":
+
+            uptime = device_data.get('_uptime', None) 
+            if offline or not uptime:
+                self.logger.debug(u"{}: Offline".format(device.name))
+                device.updateStateOnServer(key="onOffState", value=False, uiValue=u"Offline")
+                device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
+
+            else:
+                minutes, seconds = divmod(uptime, 60)
+                hours, minutes = divmod(minutes, 60)
+                days, hours = divmod(hours, 24)
+                status = u"Uptime: {:02}:{:02}:{:02}:{:02}".format( int(days), int(hours), int(minutes), int(seconds))
+                self.logger.debug(u"{}: Online".format(device.name))
+                device.updateStateOnServer(key="onOffState", value=True, uiValue=status)
+                device.updateStateImageOnServer(indigo.kStateImageSel.SensorOn)
+        
+        elif device.deviceTypeId == "unifiAccessPoint":
+            status_display = device.pluginProps.get('status_display', 'uptime')        
+
+            uptime = device_data.get('_uptime', None) 
+            if offline or not uptime:
+                self.logger.debug(u"{}: Offline".format(device.name))
+                device.updateStateOnServer(key="onOffState", value=False, uiValue=u"Offline")
+                device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
+
+            elif status_display == 'uptime':
+                minutes, seconds = divmod(uptime, 60)
+                hours, minutes = divmod(minutes, 60)
+                days, hours = divmod(hours, 24)
+                status = u"Uptime: {:02}:{:02}:{:02}:{:02}".format( int(days), int(hours), int(minutes), int(seconds))
+                self.logger.debug(u"{}: Online".format(device.name))
+                device.updateStateOnServer(key="onOffState", value=True, uiValue=status)
+                device.updateStateImageOnServer(indigo.kStateImageSel.SensorOn)
+        
+            elif  status_display == 'wifi':
+                clients0 = device_data["radio_table_stats"][0].get("user-num_sta", 0) 
+                clients1 = device_data["radio_table_stats"][1].get("user-num_sta", 0) 
+                channel0 = device_data["radio_table_stats"][0].get("channel", 0) 
+                channel1 = device_data["radio_table_stats"][1].get("channel", 0) 
+                status = u"Wifi: {} ({}) / {} ({})".format(channel0, clients0, channel1, clients1)
+                device.updateStateOnServer(key="onOffState", value=True, uiValue=status)
+                device.updateStateImageOnServer(indigo.kStateImageSel.SensorOn)
+                
+            else:        
+                self.logger.error(u"{}: invalid status display type: {}".format(device.name, status_display))   
             
+        else:        
+            self.logger.error(u"{}: deviceTypeId: {}".format(device.name, device.deviceTypeId))   
+
 
     ################################################################################
     #

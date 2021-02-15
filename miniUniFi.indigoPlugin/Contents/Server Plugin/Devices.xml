@@ -126,4 +126,37 @@
         </ConfigUI>
     </Device>
 
+    <Device id="unifiAccessPoint" type="sensor">
+        <Name>UniFi Access Point</Name>
+        <ConfigUI>
+            <Field id="SupportsOnState" type="checkbox" defaultValue="true" hidden="true" />
+            <Field id="SupportsSensorValue" type="checkbox" defaultValue="false" hidden="true" />
+            <Field id="SupportsStatusRequest" type="checkbox" defaultValue="false" hidden="true" />
+            <Field id="UniFiName" type="textfield" defaultValue="" hidden="true" />
+            
+            <Field id="unifi_controller" type="menu">
+                <Label>UniFi Controller:</Label>
+                <List class="self" method="get_controller_list" dynamicReload="true"/>
+                <CallbackMethod>menuChanged</CallbackMethod>
+            </Field>
+            <Field id="unifi_site" type="menu">
+                <Label>Site:</Label>
+                <List class="self" method="get_site_list" dynamicReload="true"/>
+                <CallbackMethod>menuChanged</CallbackMethod>
+            </Field>
+            <Field id="address" type="menu">
+                <Label>Device:</Label>
+                <List class="self" filter="" method="get_device_list" dynamicReload="true"/>
+                <CallbackMethod>menuChanged</CallbackMethod>
+            </Field>
+            <Field id="status_display" type="menu" defaultValue="temp">
+                <Label>Status Display:</Label>
+        		<List>
+        			<Option value="uptime">Uptime</Option>
+        			<Option value="wifi">Wifi Info</Option>
+        		</List>
+            </Field>            
+        </ConfigUI>
+    </Device>
+
 </Devices>
