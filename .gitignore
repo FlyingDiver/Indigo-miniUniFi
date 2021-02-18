@@ -133,3 +133,5 @@ dmypy.json
 /data.json
 
 UniFi Protect Data.py
+
+.DS_Store

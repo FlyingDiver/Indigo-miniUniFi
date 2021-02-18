@@ -480,11 +480,15 @@ class Plugin(indigo.PluginBase):
                 device.updateStateImageOnServer(indigo.kStateImageSel.SensorOn)
         
             elif  status_display == 'wifi':
-                clients0 = device_data["radio_table_stats"][0].get("user-num_sta", 0) 
-                clients1 = device_data["radio_table_stats"][1].get("user-num_sta", 0) 
-                channel0 = device_data["radio_table_stats"][0].get("channel", 0) 
-                channel1 = device_data["radio_table_stats"][1].get("channel", 0) 
-                status = u"Wifi: {} ({}) / {} ({})".format(channel0, clients0, channel1, clients1)
+                status = u"Wifi: "
+                first = True
+                for radio in device_data["radio_table_stats"]:
+                    clients = radio.get("user-num_sta", 0) 
+                    channel = radio.get("channel", 0)
+                    if not first:
+                        status = status + u" / "
+                    first = False
+                    status = status +  u"{} ({})".format(channel, clients)
                 device.updateStateOnServer(key="onOffState", value=True, uiValue=status)
                 device.updateStateImageOnServer(indigo.kStateImageSel.SensorOn)
                 
