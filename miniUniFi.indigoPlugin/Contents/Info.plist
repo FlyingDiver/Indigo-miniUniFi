@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>PluginVersion</key>
-    <string>0.1.2</string>
+    <string>0.1.3</string>
     <key>ServerApiVersion</key>
     <string>2.0</string>
     <key>IwsApiVersion</key>
@@ -18,7 +18,7 @@
     <array>
         <dict>
             <key>CFBundleURLName</key>
-            <string>http://forums.indigodomo.com/viewforum.php?f=214</string>
+            <string>https://github.com/FlyingDiver/Indigo-miniUniFi</string>
         </dict>
     </array>
 </dict>
