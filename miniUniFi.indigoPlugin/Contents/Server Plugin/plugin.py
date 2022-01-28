@@ -68,16 +68,12 @@ class Plugin(indigo.PluginBase):
         self.plugin_file_handler.setFormatter(pfmt)
 
         try:
-            self.logLevel = int(self.pluginPrefs[u"logLevel"])
+            self.logLevel = int(pluginPrefs[u"logLevel"])
         except:
             self.logLevel = logging.INFO
         self.indigo_log_handler.setLevel(self.logLevel)
 
-
-    def startup(self):
-        self.logger.info(u"Starting miniUniFi")
-        
-        self.updateFrequency = float(self.pluginPrefs.get('updateFrequency', "60"))
+        self.updateFrequency = float(pluginPrefs.get('updateFrequency', "60"))
         if self.updateFrequency < 30.0: 
             self.updateFrequency = 30.0
         self.logger.debug(u"updateFrequency = {}".format(self.updateFrequency))
@@ -89,7 +85,10 @@ class Plugin(indigo.PluginBase):
         self.update_needed = False
         self.last_controller = None
         self.last_site = u'default'
-        
+
+
+    def startup(self):
+        self.logger.info(u"Starting miniUniFi")
         
        
     def shutdown(self):
@@ -180,7 +179,7 @@ class Plugin(indigo.PluginBase):
             requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
     
         try:
-            r = requests.head('https://{}:{}'.format(device.pluginProps['address'], device.pluginProps['port']), verify=ssl_verify, timeout=10.0)
+            r = requests.head('https://{}:{}'.format(device.pluginProps['address'], device.pluginProps['port']), verify=ssl_verify, timeout=5.0)
         except Exception as err:
             self.logger.error(u"UniFi Controller OS Check Error: {}".format(err))
             return False
@@ -224,7 +223,7 @@ class Plugin(indigo.PluginBase):
             
             try:
                 url = login_url.format(base_url)
-                response = session.post(url, headers=login_headers, json=login_body, verify=ssl_verify, timeout=10.0)
+                response = session.post(url, headers=login_headers, json=login_body, verify=ssl_verify, timeout=5.0)
             except Exception as err:
                 self.logger.error(u"UniFi Controller Login Connection Error: {}".format(err))
                 device.updateStateOnServer(key='status', value="Connection Error")
@@ -251,7 +250,7 @@ class Plugin(indigo.PluginBase):
                      
             
             url = status_url.format(base_url)
-            response = session.get(url, headers=headers,  cookies=cookies, verify=ssl_verify)            
+            response = session.get(url, headers=headers,  cookies=cookies, verify=ssl_verify, timeout=5.0)            
             if response.status_code != requests.codes.ok:
                 self.logger.error(u"UniFi Controller Status Error: {}".format(response.status_code))
                 device.updateStateOnServer(key='status', value="Status Error")
@@ -277,7 +276,7 @@ class Plugin(indigo.PluginBase):
             self.logger.debug(u"{}: UniFi Controller Getting Sites".format(device.name))
 
             url = sites_url.format(base_url)
-            response = session.get(url, headers=headers, cookies=cookies, verify=ssl_verify)
+            response = session.get(url, headers=headers, cookies=cookies, verify=ssl_verify, timeout=5.0)
             if not response.status_code == requests.codes.ok:
                 self.logger.error(u"UniFi Controller Get Sites Error: {}".format(response.status_code))
                 device.updateStateOnServer(key='status', value="Sites Error")
@@ -295,7 +294,7 @@ class Plugin(indigo.PluginBase):
                 # Get active Clients for site
 
                 url = active_url.format(base_url, site['name'])
-                response = session.get(url, headers=headers, cookies=cookies, verify=ssl_verify)
+                response = session.get(url, headers=headers, cookies=cookies, verify=ssl_verify, timeout=5.0)
                 if not response.status_code == requests.codes.ok:
                     self.logger.error(u"UniFi Controller Get Active Clients Error: {}".format(response.status_code))
                     device.updateStateOnServer(key='status', value="Get Client Error")
@@ -315,7 +314,7 @@ class Plugin(indigo.PluginBase):
                 # Get UniFi Devices for the site
 
                 url = device_url.format(base_url, site['name'])
-                response = session.get(url, headers=headers, cookies=cookies, verify=ssl_verify)
+                response = session.get(url, headers=headers, cookies=cookies, verify=ssl_verify, timeout=5.0)
                 if not response.status_code == requests.codes.ok:
                     self.logger.error(u"UniFi Controller Get Devices Error: {}".format(response.status_code))
                 response.raise_for_status()
