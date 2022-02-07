@@ -118,7 +118,12 @@ class Plugin(indigo.PluginBase):
                     # now update all the UniFi devices  
 
                     for deviceID in self.unifi_devices:
-                        self.updateUniFiDevice(indigo.devices[deviceID])
+                        try:
+                            unifiDevice = indigo.devices[deviceID]
+                        except Exception as err:
+                            self.logger.error(u"Error retrieving Device ID {}: {}".format(deviceID, err))
+                        else:
+                            self.updateUniFiDevice(unifiDevice)
                         
                 self.sleep(1.0)
 
