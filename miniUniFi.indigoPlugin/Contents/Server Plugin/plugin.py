@@ -69,6 +69,7 @@ class Plugin(indigo.PluginBase):
         self.plugin_file_handler.setFormatter(pfmt)
         self.logLevel = int(pluginPrefs.get("logLevel", logging.INFO))
         self.indigo_log_handler.setLevel(self.logLevel)
+        self.logger.setLevel(self.logLevel)
 
         self.updateFrequency = float(pluginPrefs.get('updateFrequency', "60"))
         if self.updateFrequency < 30.0:
@@ -591,7 +592,7 @@ class Plugin(indigo.PluginBase):
         wired = (filter == "Wired")
         client_list = [
             (mac, nameFromClient(data))
-            for mac, data in site['actives'].iteritems() if data.get('is_wired', False) == wired
+            for mac, data in site['actives'].items() if data.get('is_wired', False) == wired
         ]
         client_list.sort(key=lambda tup: tup[1])
 
@@ -733,6 +734,7 @@ class Plugin(indigo.PluginBase):
         if not userCancelled:
             self.logLevel = int(valuesDict.get("logLevel", logging.INFO))
             self.indigo_log_handler.setLevel(self.logLevel)
+            self.logger.setLevel(self.logLevel)
 
             try:
                 self.updateFrequency = float(valuesDict["updateFrequency"])
