@@ -753,3 +753,83 @@ class Plugin(indigo.PluginBase):
             self.logger.info(json.dumps(self.unifi_controllers[controllerID]['sites'], sort_keys=True, indent=4, separators=(',', ': ')))
 
         return True
+
+    # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    # Plugin Action routines
+    # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+    def powerCycleAction(self, pluginAction, device, callerWaitingForResult):
+        self.logger.debug(f"powerCycleAction, device = {device.name}, props = {pluginAction.props}")
+        params = {'cmd': "power-cycle", 'mac':device.address, 'port_idx': pluginAction.props['port']}
+        self.commandUniFiController(device, params)
+
+    def commandUniFiController(self, device, params):
+
+        self.logger.debug(f"{device.name}: Sending command to controller with params: {params}")
+
+        unifi_controller = indigo.devices[int(device.pluginProps['unifi_controller'])]
+        headers = {"Accept": "application/json", "Content-Type": "application/json"}
+        login_headers = {"Accept": "application/json", "Content-Type": "application/json", "referer": "/login"}
+        base_url = f"https://{unifi_controller.pluginProps['address']}:{unifi_controller.pluginProps['port']}/"
+        login_body = {"username": unifi_controller.pluginProps['username'], "password": unifi_controller.pluginProps['password'], 'strict': True}
+        ssl_verify = device.pluginProps.get('ssl_verify', False)
+
+        with requests.Session() as session:
+
+            # set up URL templates based on controller type
+            unifi_os = self.is_unifi_os(unifi_controller)
+            if unifi_os:
+                login_url = "{}api/auth/login"
+                status_url = "{}proxy/network/status"
+                cmd_url = "{}proxy/network/api/s/{}/cmd/devmgr"
+
+            else:
+                login_url = "{}api/login"
+                status_url = "{}status"
+                cmd_url = "{}api/s/{}/cmd/devmgr"
+
+            try:
+                url = login_url.format(base_url)
+                response = session.post(url, headers=login_headers, json=login_body, verify=ssl_verify, timeout=5.0)
+            except Exception as err:
+                self.logger.error(f"UniFi Controller Login Connection Error: {err}")
+                device.updateStateOnServer(key='status', value="Connection Error")
+                device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
+                return
+
+            self.logger.threaddebug(f"UniFi Controller Login Response: {response.text}")
+
+            if response.status_code != requests.codes.ok:
+                device.updateStateOnServer(key='status', value="Login Error")
+                device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
+                return
+
+            device.updateStateOnServer(key='status', value="Login OK")
+            device.updateStateImageOnServer(indigo.kStateImageSel.SensorOn)
+
+            # not sure why the session cookies weren't working for the UDMP
+
+            cookies_dict = requests.utils.dict_from_cookiejar(session.cookies)
+            if unifi_os:
+                cookies = {"TOKEN": cookies_dict.get('TOKEN')}
+            else:
+                cookies = {"unifises": cookies_dict.get('unifises'), "csrf_token": cookies_dict.get('csrf_token')}
+
+            url = status_url.format(base_url)
+            response = session.get(url, headers=headers, cookies=cookies, verify=ssl_verify, timeout=5.0)
+            if response.status_code != requests.codes.ok:
+                self.logger.error(f"UniFi Controller Status Error: {response.status_code}")
+                device.updateStateOnServer(key='status', value="Status Error")
+                device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
+                return
+
+            self.logger.threaddebug(f"UniFi Controller Status Response: {response.text}")
+
+            url = cmd_url.format(base_url)
+            response = session.post(url, headers=headers, cookies=cookies, data=params, verify=ssl_verify, timeout=5.0)
+            if response.status_code != requests.codes.ok:
+                self.logger.error(f"UniFi Controller Post Error: {response.status_code}")
+                device.updateStateOnServer(key='status', value="Status Error")
+                device.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
+                return
+
