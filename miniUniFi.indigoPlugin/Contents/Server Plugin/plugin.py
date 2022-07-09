@@ -783,7 +783,8 @@ class Plugin(indigo.PluginBase):
         with requests.Session() as session:
 
             # set up URL templates based on controller type
-            if self.is_unifi_os(unifi_controller):
+            unifi_os = self.is_unifi_os(unifi_controller)
+            if unifi_os:
                 login_url  = "{}api/auth/login"
                 cmd_url    = "{}proxy/network/api/s/{}/cmd/devmgr"
             else:
