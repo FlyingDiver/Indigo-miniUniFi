@@ -817,6 +817,10 @@ class Plugin(indigo.PluginBase):
                 cookies = {"unifises": cookies_dict.get('unifises'), "csrf_token": cookies_dict.get('csrf_token')}
 
             url = cmd_url.format(base_url, site)
+            self.logger.threaddebug(f"{device.name}: Post cmd url: {url}")
+            self.logger.threaddebug(f"{device.name}: Post cmd headers: {headers}")
+            self.logger.threaddebug(f"{device.name}: Post cmd cookies: {cookies}")
+            self.logger.threaddebug(f"{device.name}: Post cmd params: {params}")
             try:
                 response = session.post(url, headers=headers, cookies=cookies, json=params, verify=ssl_verify, timeout=5.0)
             except Exception as err:
