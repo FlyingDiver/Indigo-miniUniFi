@@ -1,6 +1,10 @@
 <?xml version="1.0"?>
 <Actions>
-        <Action id="power_cycle_port" deviceFilter="self.unifiDevice">
+    <Action id="restart_device" deviceFilter="self.unifiDevice">
+        <Name>Restart Device</Name>
+        <CallbackMethod>restart_device_action</CallbackMethod>
+    </Action>
+    <Action id="power_cycle_port" deviceFilter="self.unifiDevice">
         <Name>Power Cycle Port</Name>
         <CallbackMethod>power_cycle_port_action</CallbackMethod>
         <ConfigUI>

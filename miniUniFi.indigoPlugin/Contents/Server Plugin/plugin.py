@@ -758,6 +758,11 @@ class Plugin(indigo.PluginBase):
     # Plugin Action routines
     # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+    def restart_device_action(self, action, device):
+        self.logger.debug(f"{device.name}: restart_device_action")
+        params = {'cmd': "restart", 'mac':device.address}
+        self.command_unifi_controller(device, params)
+
     def power_cycle_port_action(self, plugin_action, device, callerWaitingForResult):
         self.logger.debug(f"{device.name}: power_cycle_port_action, props = {plugin_action.props}")
         params = {'cmd': "power-cycle", 'mac':device.address, 'port_idx': int(plugin_action.props['port'])}
