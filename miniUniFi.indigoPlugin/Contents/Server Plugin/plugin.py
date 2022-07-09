@@ -783,15 +783,11 @@ class Plugin(indigo.PluginBase):
         with requests.Session() as session:
 
             # set up URL templates based on controller type
-            unifi_os = self.is_unifi_os(unifi_controller)
-            if unifi_os:
+            if self.is_unifi_os(unifi_controller):
                 login_url  = "{}api/auth/login"
-                status_url = "{}proxy/network/status"
                 cmd_url    = "{}proxy/network/api/s/{}/cmd/devmgr"
-
             else:
                 login_url  = "{}api/login"
-                status_url = "{}status"
                 cmd_url    = "{}api/s/{}/cmd/devmgr"
 
             url = login_url.format(base_url)
@@ -815,6 +811,7 @@ class Plugin(indigo.PluginBase):
             cookies_dict = requests.utils.dict_from_cookiejar(session.cookies)
             if unifi_os:
                 cookies = {"TOKEN": cookies_dict.get('TOKEN')}
+                headers['x-csrf-token'] = cookies_dict.get('TOKEN')
             else:
                 cookies = {"unifises": cookies_dict.get('unifises'), "csrf_token": cookies_dict.get('csrf_token')}
 
