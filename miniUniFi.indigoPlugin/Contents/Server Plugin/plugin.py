@@ -773,7 +773,6 @@ class Plugin(indigo.PluginBase):
         self.logger.debug(f"{device.name}: Sending command to controller with params: {params}")
 
         unifi_controller = indigo.devices[int(device.pluginProps['unifi_controller'])]
-        base_url = f"https://{unifi_controller.pluginProps['address']}:{unifi_controller.pluginProps['port']}/"
         login_headers = {"Accept": "application/json", "Content-Type": "application/json", "referer": "/login"}
         login_params = {"username": unifi_controller.pluginProps['username'], "password": unifi_controller.pluginProps['password']}
         headers = {"Accept": "*/*", "Content-Type": "application/x-www-form-urlencoded"}
@@ -785,15 +784,16 @@ class Plugin(indigo.PluginBase):
             # set up URL templates based on controller type
             unifi_os = self.is_unifi_os(unifi_controller)
             if unifi_os:
-                login_url  = "{}api/auth/login"
-                cmd_url    = "{}proxy/network/api/s/{}/cmd/devmgr"
+                base_url = f"https://{unifi_controller.pluginProps['address']}"
+                login_url  = f"{base_url}/api/auth/login"
+                cmd_url    = "{}/proxy/network/api/s/{}/cmd/devmgr"
             else:
-                login_url  = "{}api/login"
-                cmd_url    = "{}api/s/{}/cmd/devmgr"
+                base_url = f"https://{unifi_controller.pluginProps['address']}:{unifi_controller.pluginProps['port']}"
+                login_url  = f"{base_url}/api/login"
+                cmd_url    = "{}/api/s/{}/cmd/devmgr"
 
-            url = login_url.format(base_url)
             try:
-                response = session.post(url, headers=login_headers, json=login_params, verify=ssl_verify, timeout=5.0)
+                response = session.post(login_url, headers=login_headers, json=login_params, verify=ssl_verify, timeout=5.0)
             except Exception as err:
                 self.logger.error(f"UniFi Controller Login Connection Error: {err}")
                 unifi_controller.updateStateOnServer(key='status', value="Connection Error")
