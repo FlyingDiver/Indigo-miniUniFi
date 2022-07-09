@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <Actions>
-        <Action id="powerCycle" deviceFilter="self.unifiDevice">
+        <Action id="power_cycle_port" deviceFilter="self.unifiDevice">
         <Name>Power Cycle Port</Name>
-        <CallbackMethod>powerCycleAction</CallbackMethod>
+        <CallbackMethod>power_cycle_port_action</CallbackMethod>
         <ConfigUI>
             <Field id="port" type="textfield">
                 <Label>Port Index:</Label>
