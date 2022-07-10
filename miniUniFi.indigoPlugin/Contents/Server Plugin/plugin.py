@@ -811,6 +811,10 @@ class Plugin(indigo.PluginBase):
             unifi_controller.updateStateOnServer(key='status', value="Login OK")
             unifi_controller.updateStateImageOnServer(indigo.kStateImageSel.SensorOn)
 
+            if 'X-CSRF-Token' in response.headers:
+                csrf_token = response.headers['X-CSRF-Token']
+                headers['X-CSRF-Token'] = csrf_token
+
             cookies_dict = requests.utils.dict_from_cookiejar(session.cookies)
             if unifi_os:
                 cookies = {"TOKEN": cookies_dict.get('TOKEN')}
