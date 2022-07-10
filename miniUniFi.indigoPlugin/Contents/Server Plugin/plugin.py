@@ -805,9 +805,9 @@ class Plugin(indigo.PluginBase):
                 unifi_controller.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
                 return
 
-            self.logger.debug(f"{device.name}: Controller Login Response: {response.text}")
-            self.logger.debug(f"{device.name}: Controller Login Headers: {response.headers}")
-            self.logger.debug(f"{device.name}: Controller Login Cookies: {response.cookies}")
+            self.logger.threaddebug(f"{device.name}: Controller Login Response: {response.text}")
+            self.logger.threaddebug(f"{device.name}: Controller Login Headers: {response.headers}")
+            self.logger.threaddebug(f"{device.name}: Controller Login Cookies: {response.cookies}")
             unifi_controller.updateStateOnServer(key='status', value="Login OK")
             unifi_controller.updateStateImageOnServer(indigo.kStateImageSel.SensorOn)
 
@@ -839,7 +839,7 @@ class Plugin(indigo.PluginBase):
                 unifi_controller.updateStateOnServer(key='status', value="Post Error")
                 unifi_controller.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
 
-            self.logger.debug(f"{device.name}: Controller Post Response: {response.text}")
-            self.logger.debug(f"{device.name}: Controller Post Headers: {response.headers}")
-            self.logger.debug(f"{device.name}: Controller Post Cookies: {response.cookies}")
+            self.logger.threaddebug(f"{device.name}: Controller Post Response: {response.text}")
+            self.logger.threaddebug(f"{device.name}: Controller Post Headers: {response.headers}")
+            self.logger.threaddebug(f"{device.name}: Controller Post Cookies: {response.cookies}")
 
