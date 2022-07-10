@@ -806,13 +806,14 @@ class Plugin(indigo.PluginBase):
                 return
 
             self.logger.debug(f"{device.name}: Controller Login Response: {response.text}")
+            self.logger.debug(f"{device.name}: Controller Login Headers: {response.headers}")
+            self.logger.debug(f"{device.name}: Controller Login Cookies: {response.cookies}")
             unifi_controller.updateStateOnServer(key='status', value="Login OK")
             unifi_controller.updateStateImageOnServer(indigo.kStateImageSel.SensorOn)
 
             cookies_dict = requests.utils.dict_from_cookiejar(session.cookies)
             if unifi_os:
                 cookies = {"TOKEN": cookies_dict.get('TOKEN')}
-                headers['x-csrf-token'] = cookies_dict.get('TOKEN')
             else:
                 cookies = {"unifises": cookies_dict.get('unifises'), "csrf_token": cookies_dict.get('csrf_token')}
 
@@ -835,4 +836,6 @@ class Plugin(indigo.PluginBase):
                 unifi_controller.updateStateImageOnServer(indigo.kStateImageSel.SensorTripped)
 
             self.logger.debug(f"{device.name}: Controller Post Response: {response.text}")
+            self.logger.debug(f"{device.name}: Controller Post Headers: {response.headers}")
+            self.logger.debug(f"{device.name}: Controller Post Cookies: {response.cookies}")
 
