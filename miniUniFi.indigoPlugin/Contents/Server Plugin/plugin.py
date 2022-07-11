@@ -127,6 +127,11 @@ class Plugin(indigo.PluginBase):
 
         self.logger.info(f"{device.name}: Starting Device")
 
+        if device.pluginProps.get('sql_logging_exclude', False):
+            props = device.sharedProps
+            props["sqlLoggerIgnoreStates"] = "*"
+            device.replaceSharedPropsOnServer(props)
+
         if device.deviceTypeId == 'unifiController':
             self.unifi_controllers[device.id] = {'name': device.name}  # all the associated data added during update
             self.update_needed = True

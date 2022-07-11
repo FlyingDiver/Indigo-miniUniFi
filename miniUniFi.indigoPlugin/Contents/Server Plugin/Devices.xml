@@ -57,6 +57,9 @@
                 <List class="self" filter="Wired" method="get_client_list" dynamicReload="true"/>
                 <CallbackMethod>menuChanged</CallbackMethod>
             </Field>
+            <Field id="sql_logging_exclude" type="checkbox" defaultValue="false" tooltip="Exclude states from SQL Logging">
+                <Description>Exclude from SQL Logging</Description>
+            </Field>
         </ConfigUI>
         <States>
             <State id="offline_seconds" readonly="true">
@@ -89,6 +92,9 @@
                 <Label>Client:</Label>
                 <List class="self" filter="Wireless" method="get_client_list" dynamicReload="true"/>
                 <CallbackMethod>menuChanged</CallbackMethod>
+            </Field>
+            <Field id="sql_logging_exclude" type="checkbox" defaultValue="false" tooltip="Exclude states from SQL Logging">
+                <Description>Exclude from SQL Logging</Description>
             </Field>
         </ConfigUI>
         <States>
@@ -123,6 +129,9 @@
                 <List class="self" filter="" method="get_device_list" dynamicReload="true"/>
                 <CallbackMethod>menuChanged</CallbackMethod>
             </Field>
+            <Field id="sql_logging_exclude" type="checkbox" defaultValue="false" tooltip="Exclude states from SQL Logging">
+                <Description>Exclude from SQL Logging</Description>
+            </Field>
         </ConfigUI>
     </Device>
 
@@ -156,6 +165,9 @@
         			<Option value="wifi">Wifi Info</Option>
         		</List>
             </Field>            
+             <Field id="sql_logging_exclude" type="checkbox" defaultValue="false" tooltip="Exclude states from SQL Logging">
+                <Description>Exclude from SQL Logging</Description>
+            </Field>
         </ConfigUI>
     </Device>
 
