@@ -100,17 +100,17 @@ class Plugin(indigo.PluginBase):
 
                     # update from UniFi Controllers
 
-                    for controllerID in self.unifi_controllers:
+                    for controllerID in list(self.unifi_controllers):
                         self.updateUniFiController(indigo.devices[controllerID])
 
                     # now update all the client devices  
 
-                    for clientID in self.unifi_clients:
+                    for clientID in list(self.unifi_clients):
                         self.updateUniFiClient(indigo.devices[clientID])
 
                     # now update all the UniFi devices  
 
-                    for deviceID in self.unifi_devices:
+                    for deviceID in list(self.unifi_devices):
                         try:
                             unifiDevice = indigo.devices[deviceID]
                         except Exception as err:
