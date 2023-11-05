@@ -49,10 +49,14 @@ UniFiTypes = {
 }
 
 def nameFromClient(data):
-    return data.get('name', data.get('hostname', "Client @ {}".format(data.get('ip'))))
+    if name := data.get('name'):
+        return name
+    if name := data.get('hostname'):
+        return name
+    return f"{data.get('ip')} ({data.get('mac')})"
 
 def nameFromDevice(data):
-    return data.get('name', "{} @ {}".format(data.get('model'), data.get('ip')))
+    return data.get('name', f"{data.get('model')} @ {data.get('ip')}")
 
 ################################################################################
 class Plugin(indigo.PluginBase):
