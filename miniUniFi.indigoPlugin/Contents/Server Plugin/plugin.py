@@ -596,7 +596,7 @@ class Plugin(indigo.PluginBase):
 
         wired = (filter == "Wired")
         client_list = [
-            (mac, nameFromClient(data))
+            (mac, nameFromClient(data) if nameFromClient(data) else mac)
             for mac, data in site['actives'].items() if data.get('is_wired', False) == wired
         ]
         client_list.sort(key=lambda tup: tup[1])
